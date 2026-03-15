@@ -565,6 +565,7 @@ public class ClaudeChatWindow {
         }
 
         private void setupSessionCallbacks() {
+            final ClaudeSession capturedSession = this.session;
             SessionCallbackFactory.Dependencies deps = new SessionCallbackFactory.Dependencies() {
                 @Override
                 public StreamingMessageHandler getStreamingHandler() {
@@ -584,6 +585,11 @@ public class ClaudeChatWindow {
                 @Override
                 public void showPermissionDialog(PermissionRequest request) {
                     permissionHandler.showPermissionDialog(request);
+                }
+
+                @Override
+                public boolean isCurrentSession() {
+                    return ClaudeChatWindow.this.session == capturedSession;
                 }
             };
             session.setCallback(SessionCallbackFactory.create(deps));

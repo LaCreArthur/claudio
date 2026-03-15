@@ -34,6 +34,9 @@ public class SessionCallbackFactory {
 
         /** Show permission dialog for the given request */
         void showPermissionDialog(PermissionRequest request);
+
+        /** Check if the session that created this callback is still the current one */
+        boolean isCurrentSession();
     }
 
     /**
@@ -46,12 +49,14 @@ public class SessionCallbackFactory {
         return new ClaudeSession.SessionCallback() {
             @Override
             public void onMessageUpdate(List<ClaudeSession.Message> messages) {
+                if (!deps.isCurrentSession()) return;
                 // Always use throttled update mechanism to prevent excessive refreshes
                 deps.getStreamingHandler().enqueueUpdate(messages);
             }
 
             @Override
             public void onStateChange(boolean busy, boolean loading, String error) {
+                if (!deps.isCurrentSession()) return;
                 ApplicationManager.getApplication().invokeLater(() -> {
                     deps.callJavaScript("showLoading", String.valueOf(loading));
                     if (error != null) {
@@ -79,6 +84,7 @@ public class SessionCallbackFactory {
 
             @Override
             public void onThinkingStatusChanged(boolean isThinking) {
+                if (!deps.isCurrentSession()) return;
                 ApplicationManager.getApplication().invokeLater(() -> {
                     deps.callJavaScript("showThinkingStatus", String.valueOf(isThinking));
                     LOG.debug("Thinking status changed: " + isThinking);
@@ -115,6 +121,7 @@ public class SessionCallbackFactory {
 
             @Override
             public void onStreamStart() {
+                if (!deps.isCurrentSession()) return;
                 deps.getStreamingHandler().setStreamActive(true);
                 ApplicationManager.getApplication().invokeLater(() -> {
                     deps.callJavaScript("onStreamStart");
@@ -124,6 +131,7 @@ public class SessionCallbackFactory {
 
             @Override
             public void onStreamEnd() {
+                if (!deps.isCurrentSession()) return;
                 deps.getStreamingHandler().setStreamActive(false);
                 deps.getStreamingHandler().flushUpdates(() -> {
                     deps.callJavaScript("onStreamEnd");
@@ -133,6 +141,7 @@ public class SessionCallbackFactory {
 
             @Override
             public void onContentDelta(String delta) {
+                if (!deps.isCurrentSession()) return;
                 ApplicationManager.getApplication().invokeLater(() -> {
                     deps.callJavaScript("onContentDelta", JsUtils.escapeJs(delta));
                 });
@@ -140,6 +149,7 @@ public class SessionCallbackFactory {
 
             @Override
             public void onThinkingDelta(String delta) {
+                if (!deps.isCurrentSession()) return;
                 ApplicationManager.getApplication().invokeLater(() -> {
                     deps.callJavaScript("onThinkingDelta", JsUtils.escapeJs(delta));
                 });
