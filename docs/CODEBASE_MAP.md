@@ -70,7 +70,7 @@ No periodic health monitoring of bridge processes. Liveness detected only by:
 
 - **channelId**: Java-generated UUID per bridge process launch (`ClaudeSession.launchClaude()` line 195). Maps to OS process.
 - **sessionId**: From Claude SDK. Received via `{ type: "session_id" }` event. Used for resume.
-- **No epoch/generation tracking** — no mechanism to reject stale messages from old sessions.
+- **Epoch guard**: `setupSessionCallbacks()` captures `final ClaudeSession capturedSession`. All state-mutating callbacks check `this.session == capturedSession` (reference identity) — stale events from old bridge threads silently dropped. See `SessionCallbackFactory.java`.
 
 ### Session Lifecycle
 
@@ -89,14 +89,26 @@ Exists in both `SessionHandler.java:239` and `ClaudeChatWindow.java:520` (identi
 
 ## Streaming
 
-### No Turn IDs
+### Architecture (active since 0.2.13)
 
-Streaming uses index-based tracking, not turn IDs:
-- **Java**: `ClaudeMessageHandler` has `currentAssistantMessage`, `isStreaming`, `textSegmentActive/thinkingSegmentActive` booleans
+Two parallel data paths during streaming:
+- **Delta path** (lightweight): `bridge.js` → `content_delta`/`thinking_delta` → Java `notifyContentDelta()` → frontend `window.onContentDelta()` — character-level updates via refs + 50ms throttle
+- **Snapshot path** (structural): Full message JSON on `tool_use`, `stream_end`, and `result` events — ensures in-memory model consistency
+
+### Lifecycle events
+
+`bridge.js` emits `stream_start` before first delta, `stream_end` after the `for await` loop ends.
+Java `ClaudeMessageHandler.handleStreamStart/End()` sets `isStreaming` flag which gates whether `handleContent`/`handleAssistantMessage` send full snapshots.
+
+### Key state tracking
+
+- **Java**: `ClaudeMessageHandler` has `currentAssistantMessage`, `isStreaming`, `textSegmentActive/thinkingSegmentActive` booleans. Raw JSON model updated in-place by `applyTextDeltaToRaw`/`applyThinkingDeltaToRaw`.
 - **Java**: `StreamingMessageHandler` has `updateSequence` (monotonic), `STREAM_MESSAGE_UPDATE_INTERVAL_MS = 50`
-- **React**: `useStreamingCallbacks.ts` has `streamingContentRef`, `streamingMessageIndexRef`, segment arrays indexed by phase
+- **React**: `useStreamingCallbacks.ts` has `streamingContentRef`, `streamingMessageIndexRef`, segment arrays. For Claude provider, `useBackendStreamingRenderRef = true` — snapshots create/update messages, deltas provide smooth incremental text.
 
-**Race condition**: No protection against Java sending a snapshot while streaming is active — could overwrite in-progress content.
+### Config
+
+Streaming defaults OFF. Config: `~/.claude-gui/config.json` → `streaming.default` (boolean). Read at query time by `ClaudeSession.launchClaude()` → `PluginSettingsService.getStreamingEnabled()`.
 
 ## Model Selection Flow
 
@@ -129,7 +141,7 @@ All three locations default to `claude-sonnet-4-6`:
 | `streaming` | PluginSettingsService |
 | `attachments` | Base64-encoded array |
 
-**Not passed**: `maxTokens`, `maxThinkingTokens`, `reasoningEffort` — none of these are configurable.
+**Not passed**: `maxTokens`, `reasoningEffort` — not configurable via SDK. `maxThinkingTokens` IS passed (as `thinkingBudget` in SDK options).
 
 ### SDK query() options (bridge.js lines 336-351)
 
@@ -172,7 +184,7 @@ Already handles image paste from clipboard at the React level. The gap for upstr
 - **UsageTracker.java**: Extracts `input_tokens`, `cache_*_tokens`, `output_tokens` from last assistant message, computes % against model context limit, pushes via `window.onUsageUpdate(json)`
 - **ClaudeNotifier/StatusBarWidget**: Shows token info in IDE status bar
 - **SettingsHandler.getModelContextLimit()**: All models = 200K. Supports `[NNNk]`/`[NNNm]` suffix parsing.
-- **No per-message display** in the chat UI itself.
+- **Per-message display**: `MessageUsage.tsx` renders `raw.message.usage` as "Xk in (Yk cached) / Zk out" below each assistant message. Hidden during streaming.
 
 ## Timeout Config
 

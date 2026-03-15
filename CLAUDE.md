@@ -108,11 +108,13 @@ it('calls sendToJava when clicked', async () => {
 - `webview/src/utils/bridge.ts` - Java bridge communication (`sendToJava`)
 - `webview/src/hooks/useProviderConfig.ts` - Model/provider/reasoning effort state
 - `webview/src/hooks/useChatHandlers.ts` - Chat handlers, bridge event dispatch
+- `webview/src/hooks/useStreamingCallbacks.ts` - Streaming delta accumulation, lifecycle
 - `webview/src/components/ChatInputBox/types.ts` - Model and reasoning effort types/constants
+- `webview/src/components/MessageItem/MessageUsage.tsx` - Per-message token usage badge
 - `webview/src/components/PermissionDialog.tsx` - Tool permission UI
 
 **ai-bridge (Node.js):**
-- `ai-bridge/bridge.js` - Claude SDK wrapper, JSON line protocol, permission callback
+- `ai-bridge/bridge.js` - Claude SDK wrapper, JSON line protocol, streaming lifecycle
 
 **Java Plugin:**
 - `src/main/java/.../ClaudeSDKToolWindow.java` - Plugin entry, JCEF webview setup
@@ -121,6 +123,9 @@ it('calls sendToJava when clicked', async () => {
 - `src/main/java/.../handler/SettingsHandler.java` - Settings from webview (model, effort, permissions)
 - `src/main/java/.../handler/HandlerContext.java` - Per-window mutable state
 - `src/main/java/.../session/SessionState.java` - Per-session state
+- `src/main/java/.../session/ClaudeMessageHandler.java` - Bridge event handler, streaming delta routing
+- `src/main/java/.../session/CallbackHandler.java` - Callback dispatch to UI layer
+- `src/main/java/.../ui/SessionCallbackFactory.java` - Session callback creation with epoch guards
 - `src/main/java/.../permission/PermissionService.java` - Tool approval logic
 - `src/main/java/.../provider/claude/ClaudeSDKBridge.java` - Spawns ai-bridge process
 - `src/main/java/.../provider/claude/ProcessManager.java` - Process registry, cleanup
@@ -128,7 +133,7 @@ it('calls sendToJava when clicked', async () => {
 - `src/main/java/.../settings/WorkingDirectoryManager.java` - CWD resolution
 
 **Architecture docs:**
-- `docs/CODEBASE_MAP.md` - Process spawning paths, lifecycle, env vars, session architecture
+- `docs/CODEBASE_MAP.md` - Process spawning paths, lifecycle, env vars, session architecture, streaming
 - `docs/UPSTREAM_DELTA.md` - Upstream feature analysis and port candidates
 
 ## Release Checklist
@@ -146,6 +151,10 @@ Note: `build.gradle` auto-generates `<change-notes>` from CHANGELOG.md
 
 For full-stack settings/features that span React → Java → bridge.js → SDK, see `.claude/skills/full-stack-feature.md` — documents the exact 11-file path with checklist.
 
+## Writing E2E Tests
+
+See `.claude/skills/e2e-test.md` for the template, Page Object API, and patterns (intercepting React callbacks, writing config directly, etc.).
+
 ## Fork History
 
 Originally forked from [zhukunpenglinyutong/idea-claude-code-gui](https://github.com/zhukunpenglinyutong/idea-claude-code-gui). Upstream sync abandoned January 2026. See `docs/UPSTREAM_DELTA.md` for full feature delta analysis.
@@ -154,4 +163,4 @@ Originally forked from [zhukunpenglinyutong/idea-claude-code-gui](https://github
 - English-only (removed i18n)
 - Claude-only (removed Codex/multi-provider)
 - Simplified architecture
-- Ported: UTF-8 enforcement, proxy/TLS forwarding, zombie process fixes, CWD dedup, reasoning effort selector
+- Ported: UTF-8 enforcement, proxy/TLS forwarding, zombie process fixes, CWD dedup, reasoning effort selector, streaming deltas, session epoch isolation, per-message token usage
