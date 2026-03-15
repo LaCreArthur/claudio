@@ -110,6 +110,7 @@ public class EnvironmentConfigurator {
         configureNodePath(env, nodeExecutable);
 
         configurePermissionEnv(env);
+        configureNetworkEnv(env);
     }
 
     /**
@@ -282,6 +283,31 @@ public class EnvironmentConfigurator {
         }
         if (hasAttachments) {
             env.put("CLAUDE_USE_STDIN", "true");
+        }
+    }
+
+    /**
+     * Forward proxy and TLS environment variables to child processes.
+     * Ensures corporate SSL-inspecting proxies work correctly.
+     */
+    public void configureNetworkEnv(Map<String, String> env) {
+        if (env == null) {
+            return;
+        }
+        String[] networkVars = {
+            "HTTP_PROXY", "http_proxy",
+            "HTTPS_PROXY", "https_proxy",
+            "NO_PROXY", "no_proxy",
+            "NODE_EXTRA_CA_CERTS",
+            "NODE_TLS_REJECT_UNAUTHORIZED",
+            "SSL_CERT_FILE",
+            "SSL_CERT_DIR"
+        };
+        for (String varName : networkVars) {
+            String value = System.getenv(varName);
+            if (value != null && !value.isEmpty()) {
+                env.putIfAbsent(varName, value);
+            }
         }
     }
 

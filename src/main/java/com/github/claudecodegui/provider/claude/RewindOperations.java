@@ -104,8 +104,11 @@ public class RewindOperations {
                 envConfigurator.updateProcessEnvironment(pb, node);
 
                 Process process = pb.start();
+                String rewindChannelId = "__rewind_" + System.currentTimeMillis() + "__";
+                processManager.registerProcess(rewindChannelId, process);
                 LOG.info("[Rewind] Process started, PID: " + process.pid());
 
+                try {
                 // Write to stdin
                 try (java.io.OutputStream stdin = process.getOutputStream()) {
                     stdin.write(stdinJson.getBytes(StandardCharsets.UTF_8));
@@ -163,6 +166,10 @@ public class RewindOperations {
                     }
                 }
                 return response;
+
+                } finally {
+                    processManager.unregisterProcess(rewindChannelId, process);
+                }
 
             } catch (Exception e) {
                 LOG.error("[Rewind] Exception: " + e.getMessage(), e);

@@ -25,6 +25,7 @@ public class HandlerContext {
     private JBCefBrowser browser;
     private String currentModel = "claude-sonnet-4-6";
     private String currentProvider = "claude";
+    private int maxThinkingTokens = 0; // 0 = auto (let SDK decide)
     private volatile boolean disposed = false;
 
     /**
@@ -95,6 +96,14 @@ public class HandlerContext {
 
     public void setCurrentProvider(String currentProvider) {
         this.currentProvider = currentProvider;
+    }
+
+    public int getMaxThinkingTokens() {
+        return maxThinkingTokens;
+    }
+
+    public void setMaxThinkingTokens(int maxThinkingTokens) {
+        this.maxThinkingTokens = maxThinkingTokens;
     }
 
     public void setDisposed(boolean disposed) {

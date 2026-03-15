@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
-import type { ButtonAreaProps, ModelInfo, PermissionMode } from './types';
-import { ConfigSelect, ModelSelect, ModeSelect } from './selectors';
+import type { ButtonAreaProps, ModelInfo, PermissionMode, ReasoningEffort } from './types';
+import { ConfigSelect, ModelSelect, ModeSelect, ReasoningEffortSelect } from './selectors';
 import { CLAUDE_MODELS } from './types';
 
 export const ButtonArea = ({
@@ -22,6 +22,8 @@ export const ButtonArea = ({
   selectedAgent,
   onAgentSelect,
   onOpenAgentSettings,
+  reasoningEffort = '',
+  onReasoningEffortChange,
 }: ButtonAreaProps) => {
   const applyModelMapping = (model: ModelInfo, mapping: { haiku?: string; sonnet?: string; opus?: string }): ModelInfo => {
     const modelKeyMap: Record<string, keyof typeof mapping> = {
@@ -79,6 +81,10 @@ export const ButtonArea = ({
     onModelSelect?.(modelId);
   }, [onModelSelect]);
 
+  const handleReasoningEffortChange = useCallback((effort: ReasoningEffort) => {
+    onReasoningEffortChange?.(effort);
+  }, [onReasoningEffortChange]);
+
   const handleProviderSelect = useCallback((providerId: string) => {
     onProviderSelect?.(providerId);
   }, [onProviderSelect]);
@@ -99,6 +105,7 @@ export const ButtonArea = ({
         />
         <ModeSelect value={permissionMode} onChange={handleModeSelect} />
         <ModelSelect value={selectedModel} onChange={handleModelSelect} models={availableModels} />
+        <ReasoningEffortSelect value={reasoningEffort} onChange={handleReasoningEffortChange} />
       </div>
 
       <div className="button-area-right">

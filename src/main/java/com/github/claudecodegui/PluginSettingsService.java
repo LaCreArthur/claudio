@@ -123,7 +123,7 @@ public class PluginSettingsService {
             return createDefaultConfig();
         }
 
-        try (FileReader reader = new FileReader(configFile)) {
+        try (java.io.InputStreamReader reader = new java.io.InputStreamReader(new java.io.FileInputStream(configFile), java.nio.charset.StandardCharsets.UTF_8)) {
             JsonObject config = JsonParser.parseReader(reader).getAsJsonObject();
             LOG.info("[CodemossSettings] Successfully read config from: " + configPath);
             return config;
@@ -138,7 +138,7 @@ public class PluginSettingsService {
         backupConfig();
 
         String configPath = getConfigPath();
-        try (FileWriter writer = new FileWriter(configPath)) {
+        try (java.io.OutputStreamWriter writer = new java.io.OutputStreamWriter(new java.io.FileOutputStream(configPath), java.nio.charset.StandardCharsets.UTF_8)) {
             gson.toJson(config, writer);
             LOG.info("[CodemossSettings] Successfully wrote config to: " + configPath);
         } catch (Exception e) {

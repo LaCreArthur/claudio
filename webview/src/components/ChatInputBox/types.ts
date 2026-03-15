@@ -148,6 +148,22 @@ export const CLAUDE_MODELS: ModelInfo[] = [
 
 export const AVAILABLE_MODELS = CLAUDE_MODELS;
 
+export type ReasoningEffort = 'low' | 'medium' | 'high' | '';
+
+export interface ReasoningEffortOption {
+  id: ReasoningEffort;
+  label: string;
+  tokens: number | null;
+  description: string;
+}
+
+export const REASONING_EFFORTS: ReasoningEffortOption[] = [
+  { id: '', label: 'Auto', tokens: null, description: 'Let the model decide' },
+  { id: 'low', label: 'Low', tokens: 1024, description: 'Minimal thinking · fastest' },
+  { id: 'medium', label: 'Medium', tokens: 10000, description: 'Balanced thinking' },
+  { id: 'high', label: 'High', tokens: 32000, description: 'Deep thinking · slowest' },
+];
+
 export interface ProviderInfo {
   id: string;
   label: string;
@@ -170,6 +186,8 @@ export interface ChatInputBoxProps {
   selectedModel?: string;
   permissionMode?: PermissionMode;
   currentProvider?: string;
+  reasoningEffort?: ReasoningEffort;
+  onReasoningEffortChange?: (effort: ReasoningEffort) => void;
   usagePercentage?: number;
   usageUsedTokens?: number;
   usageMaxTokens?: number;
@@ -224,12 +242,14 @@ export interface ButtonAreaProps {
   selectedModel?: string;
   permissionMode?: PermissionMode;
   currentProvider?: string;
+  reasoningEffort?: ReasoningEffort;
 
   onSubmit?: () => void;
   onStop?: () => void;
   onModeSelect?: (mode: PermissionMode) => void;
   onModelSelect?: (modelId: string) => void;
   onProviderSelect?: (providerId: string) => void;
+  onReasoningEffortChange?: (effort: ReasoningEffort) => void;
   alwaysThinkingEnabled?: boolean;
   onToggleThinking?: (enabled: boolean) => void;
   streamingEnabled?: boolean;

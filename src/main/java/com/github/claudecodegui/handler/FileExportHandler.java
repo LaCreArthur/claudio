@@ -84,7 +84,7 @@ public class FileExportHandler extends BaseMessageHandler {
 
                         File finalFileToSave = fileToSave;
                         CompletableFuture.runAsync(() -> {
-                            try (FileWriter writer = new FileWriter(finalFileToSave)) {
+                            try (java.io.OutputStreamWriter writer = new java.io.OutputStreamWriter(new java.io.FileOutputStream(finalFileToSave), java.nio.charset.StandardCharsets.UTF_8)) {
                                 writer.write(content);
                                 LOG.info("[FileExportHandler] File saved successfully: " + finalFileToSave.getAbsolutePath());
 

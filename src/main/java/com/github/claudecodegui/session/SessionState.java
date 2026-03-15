@@ -26,6 +26,7 @@ public class SessionState {
     private List<String> slashCommands = new ArrayList<>();
 
     private boolean psiContextEnabled = true;
+    private int maxThinkingTokens = 0;
 
     public String getSessionId() {
         return sessionId;
@@ -137,6 +138,14 @@ public class SessionState {
 
     public void setPsiContextEnabled(boolean psiContextEnabled) {
         this.psiContextEnabled = psiContextEnabled;
+    }
+
+    public int getMaxThinkingTokens() {
+        return maxThinkingTokens;
+    }
+
+    public void setMaxThinkingTokens(int maxThinkingTokens) {
+        this.maxThinkingTokens = maxThinkingTokens;
     }
 
     public void addMessage(ClaudeSession.Message message) {

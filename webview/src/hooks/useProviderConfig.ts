@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, type Dispatch, type SetStateAction } from 'react';
-import type { PermissionMode } from '../components/ChatInputBox/types';
+import type { PermissionMode, ReasoningEffort } from '../components/ChatInputBox/types';
 import { CLAUDE_MODELS } from '../components/ChatInputBox/types';
 import type { ProviderConfig } from '../types/provider';
 
@@ -16,6 +16,8 @@ export interface UseProviderConfigReturn {
   setActiveProviderConfig: Dispatch<SetStateAction<ProviderConfig | null>>;
   claudeSettingsAlwaysThinkingEnabled: boolean;
   setClaudeSettingsAlwaysThinkingEnabled: Dispatch<SetStateAction<boolean>>;
+  reasoningEffort: ReasoningEffort;
+  setReasoningEffort: Dispatch<SetStateAction<ReasoningEffort>>;
 
   currentProviderRef: React.MutableRefObject<string>;
 
@@ -29,6 +31,7 @@ export function useProviderConfig(): UseProviderConfigReturn {
   const [permissionMode, setPermissionMode] = useState<PermissionMode>('default');
   const [activeProviderConfig, setActiveProviderConfig] = useState<ProviderConfig | null>(null);
   const [claudeSettingsAlwaysThinkingEnabled, setClaudeSettingsAlwaysThinkingEnabled] = useState(true);
+  const [reasoningEffort, setReasoningEffort] = useState<ReasoningEffort>('');
 
   const currentProviderRef = useRef(currentProvider);
 
@@ -76,6 +79,8 @@ export function useProviderConfig(): UseProviderConfigReturn {
     setActiveProviderConfig,
     claudeSettingsAlwaysThinkingEnabled,
     setClaudeSettingsAlwaysThinkingEnabled,
+    reasoningEffort,
+    setReasoningEffort,
 
     currentProviderRef,
 

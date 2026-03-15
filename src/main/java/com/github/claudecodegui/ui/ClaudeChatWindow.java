@@ -518,37 +518,7 @@ public class ClaudeChatWindow {
         }
 
         private String determineWorkingDirectory() {
-            String projectPath = project.getBasePath();
-
-            if (projectPath == null || !new File(projectPath).exists()) {
-                String userHome = System.getProperty("user.home");
-                LOG.warn("Using user home directory as fallback: " + userHome);
-                return userHome;
-            }
-
-            try {
-                PluginSettingsService settingsService = new PluginSettingsService();
-                String customWorkingDir = settingsService.getCustomWorkingDirectory(projectPath);
-
-                if (customWorkingDir != null && !customWorkingDir.isEmpty()) {
-                    File workingDirFile = new File(customWorkingDir);
-                    if (!workingDirFile.isAbsolute()) {
-                        workingDirFile = new File(projectPath, customWorkingDir);
-                    }
-
-                    if (workingDirFile.exists() && workingDirFile.isDirectory()) {
-                        String resolvedPath = workingDirFile.getAbsolutePath();
-                        LOG.info("Using custom working directory: " + resolvedPath);
-                        return resolvedPath;
-                    } else {
-                        LOG.warn("Custom working directory does not exist: " + workingDirFile.getAbsolutePath() + ", falling back to project root");
-                    }
-                }
-            } catch (Exception e) {
-                LOG.warn("Failed to read custom working directory: " + e.getMessage());
-            }
-
-            return projectPath;
+            return com.github.claudecodegui.settings.WorkingDirectoryManager.resolveWorkingDirectory(project);
         }
 
         private void loadHistorySession(String sessionId, String projectPath) {

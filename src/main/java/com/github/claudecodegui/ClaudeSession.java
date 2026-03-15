@@ -530,6 +530,7 @@ public class ClaudeSession {
             openedFilesJson,
             agentPrompt,
             streaming,
+            state.getMaxThinkingTokens(),
             permissionCallback,
             askUserCallback,
             handler
@@ -731,6 +732,10 @@ public class ClaudeSession {
     /**
      * Get model
      */
+    public void setMaxThinkingTokens(int tokens) {
+        state.setMaxThinkingTokens(tokens);
+    }
+
     public String getModel() {
         return state.getModel();
     }

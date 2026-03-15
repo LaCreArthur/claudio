@@ -275,7 +275,8 @@ async function main() {
       openedFiles,
       agentPrompt,
       streaming = false,
-      attachments
+      attachments,
+      maxThinkingTokens
     } = input;
 
     debug(`[E2E DEBUG] permissionMode received: "${permissionMode}" (raw input.permissionMode: "${input.permissionMode}")`);
@@ -337,6 +338,7 @@ async function main() {
       cwd: workingDirectory,
       permissionMode: permissionMode === '' ? 'default' : permissionMode,
       model: model || undefined,
+      ...(maxThinkingTokens > 0 && { thinkingBudget: maxThinkingTokens }),
       maxTurns: 100,
       enableFileCheckpointing: true,
       ...(streaming && { includePartialMessages: true }),

@@ -7,9 +7,11 @@ import com.google.gson.JsonArray;
 import com.intellij.openapi.diagnostic.Logger;
 
 import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -39,7 +41,7 @@ public class ClaudeSettingsManager {
             return createDefaultClaudeSettings();
         }
 
-        try (FileReader reader = new FileReader(settingsFile)) {
+        try (InputStreamReader reader = new InputStreamReader(new FileInputStream(settingsFile), java.nio.charset.StandardCharsets.UTF_8)) {
             return JsonParser.parseReader(reader).getAsJsonObject();
         } catch (Exception e) {
             LOG.warn("[ClaudeSettingsManager] Failed to read ~/.claude/settings.json: " + e.getMessage());
@@ -59,7 +61,7 @@ public class ClaudeSettingsManager {
         JsonObject env = settings.getAsJsonObject("env");
         env.addProperty("CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC", "1");
 
-        try (FileWriter writer = new FileWriter(settingsPath.toFile())) {
+        try (OutputStreamWriter writer = new OutputStreamWriter(new FileOutputStream(settingsPath.toFile()), java.nio.charset.StandardCharsets.UTF_8)) {
             gson.toJson(settings, writer);
             LOG.info("[ClaudeSettingsManager] Synced settings to: " + settingsPath);
         }
@@ -78,7 +80,7 @@ public class ClaudeSettingsManager {
             }
 
             JsonObject claudeJson;
-            try (FileReader reader = new FileReader(claudeJsonFile)) {
+            try (InputStreamReader reader = new InputStreamReader(new FileInputStream(claudeJsonFile), java.nio.charset.StandardCharsets.UTF_8)) {
                 claudeJson = JsonParser.parseReader(reader).getAsJsonObject();
             } catch (Exception e) {
                 LOG.error("[ClaudeSettingsManager] Failed to parse ~/.claude.json: " + e.getMessage(), e);

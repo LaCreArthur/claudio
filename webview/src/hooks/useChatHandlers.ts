@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { sendBridgeEvent } from '../utils/bridge';
-import type { Attachment, PermissionMode, SelectedAgent } from '../components/ChatInputBox/types';
+import type { Attachment, PermissionMode, ReasoningEffort, SelectedAgent } from '../components/ChatInputBox/types';
 import type { ClaudeMessage, ClaudeContentBlock } from '../types';
 import type { ProviderConfig } from '../types/provider';
 
@@ -29,6 +29,7 @@ export interface UseChatHandlersParams {
   setClaudeSettingsAlwaysThinkingEnabled: (enabled: boolean) => void;
   setStreamingEnabledSetting: (enabled: boolean) => void;
   setSendShortcut: (shortcut: 'enter' | 'cmdEnter') => void;
+  setReasoningEffort: (effort: ReasoningEffort) => void;
   addToast: (message: string, type?: 'info' | 'success' | 'warning' | 'error') => void;
 }
 
@@ -41,6 +42,7 @@ export interface ChatHandlers {
   handleToggleThinking: (enabled: boolean) => void;
   handleStreamingEnabledChange: (enabled: boolean) => void;
   handleSendShortcutChange: (shortcut: 'enter' | 'cmdEnter') => void;
+  handleReasoningEffortChange: (effort: ReasoningEffort) => void;
 }
 
 export function useChatHandlers(params: UseChatHandlersParams): ChatHandlers {
@@ -69,6 +71,7 @@ export function useChatHandlers(params: UseChatHandlersParams): ChatHandlers {
     setClaudeSettingsAlwaysThinkingEnabled,
     setStreamingEnabledSetting,
     setSendShortcut,
+    setReasoningEffort,
     addToast,
   } = params;
 
@@ -278,6 +281,11 @@ export function useChatHandlers(params: UseChatHandlersParams): ChatHandlers {
     sendBridgeEvent('set_send_shortcut', JSON.stringify(payload));
   }, [setSendShortcut]);
 
+  const handleReasoningEffortChange = useCallback((effort: ReasoningEffort) => {
+    setReasoningEffort(effort);
+    sendBridgeEvent('set_reasoning_effort', effort);
+  }, [setReasoningEffort]);
+
   return {
     handleSubmit,
     handleModeSelect,
@@ -287,5 +295,6 @@ export function useChatHandlers(params: UseChatHandlersParams): ChatHandlers {
     handleToggleThinking,
     handleStreamingEnabledChange,
     handleSendShortcutChange,
+    handleReasoningEffortChange,
   };
 }

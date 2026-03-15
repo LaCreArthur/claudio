@@ -119,6 +119,8 @@ const App = () => {
     setActiveProviderConfig,
     claudeSettingsAlwaysThinkingEnabled,
     setClaudeSettingsAlwaysThinkingEnabled,
+    reasoningEffort,
+    setReasoningEffort,
     currentProviderRef,
     syncActiveProviderModelMapping,
   } = useProviderConfig();
@@ -356,6 +358,7 @@ const App = () => {
     handleToggleThinking,
     handleStreamingEnabledChange,
     handleSendShortcutChange,
+    handleReasoningEffortChange,
   } = useChatHandlers({
     loading,
     sdkStatusLoaded,
@@ -381,6 +384,7 @@ const App = () => {
     setClaudeSettingsAlwaysThinkingEnabled,
     setStreamingEnabledSetting,
     setSendShortcut,
+    setReasoningEffort,
     addToast,
   });
 
@@ -825,6 +829,8 @@ const App = () => {
             onModeSelect={handleModeSelect}
             onModelSelect={handleModelSelect}
             onProviderSelect={handleProviderSelect}
+            reasoningEffort={reasoningEffort}
+            onReasoningEffortChange={handleReasoningEffortChange}
             onToggleThinking={handleToggleThinking}
             streamingEnabled={streamingEnabledSetting}
             onStreamingEnabledChange={handleStreamingEnabledChange}

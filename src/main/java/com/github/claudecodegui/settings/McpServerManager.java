@@ -8,9 +8,11 @@ import com.google.gson.JsonParser;
 import com.intellij.openapi.diagnostic.Logger;
 
 import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -53,7 +55,7 @@ public class McpServerManager {
             File claudeJsonFile = claudeJsonPath.toFile();
 
             if (claudeJsonFile.exists()) {
-                try (FileReader reader = new FileReader(claudeJsonFile)) {
+                try (InputStreamReader reader = new InputStreamReader(new FileInputStream(claudeJsonFile), java.nio.charset.StandardCharsets.UTF_8)) {
                     JsonObject claudeJson = JsonParser.parseReader(reader).getAsJsonObject();
 
                     if (claudeJson.has("mcpServers") && claudeJson.get("mcpServers").isJsonObject()) {
@@ -171,7 +173,7 @@ public class McpServerManager {
             File claudeJsonFile = claudeJsonPath.toFile();
 
             if (claudeJsonFile.exists()) {
-                try (FileReader reader = new FileReader(claudeJsonFile)) {
+                try (InputStreamReader reader = new InputStreamReader(new FileInputStream(claudeJsonFile), java.nio.charset.StandardCharsets.UTF_8)) {
                     JsonObject claudeJson = JsonParser.parseReader(reader).getAsJsonObject();
 
                     if (!claudeJson.has("mcpServers") || !claudeJson.get("mcpServers").isJsonObject()) {
@@ -240,7 +242,7 @@ public class McpServerManager {
                         projectConfig.add("disabledMcpServers", newProjectDisabled);
                     }
 
-                    try (FileWriter writer = new FileWriter(claudeJsonFile)) {
+                    try (OutputStreamWriter writer = new OutputStreamWriter(new FileOutputStream(claudeJsonFile), java.nio.charset.StandardCharsets.UTF_8)) {
                         gson.toJson(claudeJson, writer);
                         writer.flush();
                     }
@@ -299,7 +301,7 @@ public class McpServerManager {
             File claudeJsonFile = claudeJsonPath.toFile();
 
             if (claudeJsonFile.exists()) {
-                try (FileReader reader = new FileReader(claudeJsonFile)) {
+                try (InputStreamReader reader = new InputStreamReader(new FileInputStream(claudeJsonFile), java.nio.charset.StandardCharsets.UTF_8)) {
                     JsonObject claudeJson = JsonParser.parseReader(reader).getAsJsonObject();
 
                     if (claudeJson.has("mcpServers") && claudeJson.get("mcpServers").isJsonObject()) {
@@ -319,7 +321,7 @@ public class McpServerManager {
                                 claudeJson.add("disabledMcpServers", newDisabled);
                             }
 
-                            try (FileWriter writer = new FileWriter(claudeJsonFile)) {
+                            try (OutputStreamWriter writer = new OutputStreamWriter(new FileOutputStream(claudeJsonFile), java.nio.charset.StandardCharsets.UTF_8)) {
                                 gson.toJson(claudeJson, writer);
                                 writer.flush();
                             }

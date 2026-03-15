@@ -14,6 +14,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Handles session message retrieval from the Claude CLI.
@@ -77,7 +78,12 @@ public class SessionOperations {
                 }
             }
 
-            process.waitFor();
+            boolean finished = process.waitFor(30, TimeUnit.SECONDS);
+            if (!finished) {
+                LOG.warn("[getSessionMessages] Process timed out after 30s, killing");
+                com.github.claudecodegui.util.PlatformUtils.terminateProcess(process);
+                throw new RuntimeException("Session retrieval timed out after 30 seconds");
+            }
 
             String outputStr = output.toString().trim();
             LOG.info("[getSessionMessages] Raw output length: " + outputStr.length());

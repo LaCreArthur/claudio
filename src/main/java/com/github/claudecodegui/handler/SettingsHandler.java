@@ -49,7 +49,8 @@ public class SettingsHandler extends BaseMessageHandler {
         "switch_provider",
         "get_active_provider",
         "save_imported_providers",
-        "get_auth_status"
+        "get_auth_status",
+        "set_reasoning_effort"
     };
 
     private static final Map<String, Integer> MODEL_CONTEXT_LIMITS = new HashMap<>();
@@ -158,6 +159,9 @@ public class SettingsHandler extends BaseMessageHandler {
             case "get_auth_status":
                 providerOps.handleGetAuthStatus();
                 return true;
+            case "set_reasoning_effort":
+                handleSetReasoningEffort(content);
+                return true;
             default:
                 return false;
         }
@@ -263,6 +267,23 @@ public class SettingsHandler extends BaseMessageHandler {
             });
         } catch (Exception e) {
             LOG.error("[SettingsHandler] Failed to set model: " + e.getMessage(), e);
+        }
+    }
+
+    private static final Map<String, Integer> REASONING_EFFORT_MAP = new HashMap<>();
+    static {
+        REASONING_EFFORT_MAP.put("low", 1024);
+        REASONING_EFFORT_MAP.put("medium", 10000);
+        REASONING_EFFORT_MAP.put("high", 32000);
+    }
+
+    private void handleSetReasoningEffort(String content) {
+        String effort = content != null ? content.trim() : "";
+        int tokens = REASONING_EFFORT_MAP.getOrDefault(effort, 0);
+        LOG.info("[SettingsHandler] Setting reasoning effort: " + (effort.isEmpty() ? "auto" : effort) + " (" + tokens + " tokens)");
+        context.setMaxThinkingTokens(tokens);
+        if (context.getSession() != null) {
+            context.getSession().setMaxThinkingTokens(tokens);
         }
     }
 

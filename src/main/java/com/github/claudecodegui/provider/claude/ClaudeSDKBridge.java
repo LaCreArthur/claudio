@@ -281,6 +281,7 @@ public class ClaudeSDKBridge extends BaseSDKBridge {
             JsonObject openedFiles,
             String agentPrompt,
             Boolean streaming,
+            int maxThinkingTokens,
             PermissionCallback permissionCallback,
             AskUserQuestionCallback askUserCallback,
             MessageCallback callback
@@ -308,6 +309,9 @@ public class ClaudeSDKBridge extends BaseSDKBridge {
                 commandJson.addProperty("permissionMode", permissionMode != null ? permissionMode : "default");
                 if (model != null && !model.isEmpty()) {
                     commandJson.addProperty("model", model);
+                }
+                if (maxThinkingTokens > 0) {
+                    commandJson.addProperty("maxThinkingTokens", maxThinkingTokens);
                 }
                 if (openedFiles != null && openedFiles.size() > 0) {
                     commandJson.add("openedFiles", openedFiles);

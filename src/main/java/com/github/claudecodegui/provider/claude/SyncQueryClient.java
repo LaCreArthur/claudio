@@ -85,72 +85,79 @@ public class SyncQueryClient {
             pb.environment().put("CLAUDE_USE_STDIN", "true");
 
             Process process = pb.start();
+            String syncChannelId = "__sync_" + System.currentTimeMillis() + "__";
+            processManager.registerProcess(syncChannelId, process);
 
-            try (java.io.OutputStream stdin = process.getOutputStream()) {
-                stdin.write(stdinJson.getBytes(StandardCharsets.UTF_8));
-                stdin.flush();
-            } catch (Exception e) {
-                // Ignore stdin write error
-            }
-
-            try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
-
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    output.append(line).append("\n");
-
-                    if (line.contains("[JSON_START]")) {
-                        inJson = true;
-                        jsonBuffer.setLength(0);
-                        continue;
-                    }
-                    if (line.contains("[JSON_END]")) {
-                        inJson = false;
-                        continue;
-                    }
-                    if (inJson) {
-                        jsonBuffer.append(line).append("\n");
-                    }
-
-                    if (line.contains("[Assistant]:")) {
-                        result.finalResult = line.substring(line.indexOf("[Assistant]:") + 12).trim();
-                    }
-                }
-            }
-
-            boolean finished = process.waitFor(timeoutSeconds, TimeUnit.SECONDS);
-            if (!finished) {
-                process.destroyForcibly();
-                result.success = false;
-                result.error = "Process timeout";
-                return result;
-            }
-
-            int exitCode = process.exitValue();
-            result.rawOutput = output.toString();
-
-            if (jsonBuffer.length() > 0) {
-                try {
-                    String jsonStr = jsonBuffer.toString().trim();
-                    JsonObject jsonResult = gson.fromJson(jsonStr, JsonObject.class);
-                    result.success = jsonResult.get("success").getAsBoolean();
-
-                    if (result.success) {
-                        result.messageCount = jsonResult.get("messageCount").getAsInt();
-                    } else {
-                        result.error = jsonResult.has("error") ?
-                                jsonResult.get("error").getAsString() : "Unknown error";
-                    }
+            try {
+                try (java.io.OutputStream stdin = process.getOutputStream()) {
+                    stdin.write(stdinJson.getBytes(StandardCharsets.UTF_8));
+                    stdin.flush();
                 } catch (Exception e) {
+                    // Ignore stdin write error
+                }
+
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
+
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        output.append(line).append("\n");
+
+                        if (line.contains("[JSON_START]")) {
+                            inJson = true;
+                            jsonBuffer.setLength(0);
+                            continue;
+                        }
+                        if (line.contains("[JSON_END]")) {
+                            inJson = false;
+                            continue;
+                        }
+                        if (inJson) {
+                            jsonBuffer.append(line).append("\n");
+                        }
+
+                        if (line.contains("[Assistant]:")) {
+                            result.finalResult = line.substring(line.indexOf("[Assistant]:") + 12).trim();
+                        }
+                    }
+                }
+
+                boolean finished = process.waitFor(timeoutSeconds, TimeUnit.SECONDS);
+                if (!finished) {
+                    com.github.claudecodegui.util.PlatformUtils.terminateProcess(process);
                     result.success = false;
-                    result.error = "JSON parse failed: " + e.getMessage();
+                    result.error = "Process timeout";
+                    return result;
                 }
-            } else {
-                result.success = exitCode == 0;
-                if (!result.success) {
-                    result.error = "Process exit code: " + exitCode;
+
+                int exitCode = process.exitValue();
+                result.rawOutput = output.toString();
+
+                if (jsonBuffer.length() > 0) {
+                    try {
+                        String jsonStr = jsonBuffer.toString().trim();
+                        JsonObject jsonResult = gson.fromJson(jsonStr, JsonObject.class);
+                        result.success = jsonResult.get("success").getAsBoolean();
+
+                        if (result.success) {
+                            result.messageCount = jsonResult.get("messageCount").getAsInt();
+                        } else {
+                            result.error = jsonResult.has("error") ?
+                                    jsonResult.get("error").getAsString() : "Unknown error";
+                        }
+                    } catch (Exception e) {
+                        result.success = false;
+                        result.error = "JSON parse failed: " + e.getMessage();
+                    }
+                } else {
+                    result.success = exitCode == 0;
+                    if (!result.success) {
+                        result.error = "Process exit code: " + exitCode;
+                    }
                 }
+
+            } finally {
+                processManager.unregisterProcess(syncChannelId, process);
             }
 
         } catch (Exception e) {

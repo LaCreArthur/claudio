@@ -11,7 +11,6 @@ import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 
 import javax.swing.*;
-import java.io.File;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -237,33 +236,6 @@ public class SessionHandler extends BaseMessageHandler {
     }
 
     private String determineWorkingDirectory() {
-        String projectPath = context.getProject().getBasePath();
-        if (projectPath == null || !new File(projectPath).exists()) {
-            String userHome = System.getProperty("user.home");
-            LOG.warn("[SessionHandler] Using user home directory as fallback: " + userHome);
-            return userHome;
-        }
-
-        try {
-            com.github.claudecodegui.PluginSettingsService settingsService =
-                new com.github.claudecodegui.PluginSettingsService();
-            String customWorkingDir = settingsService.getCustomWorkingDirectory(projectPath);
-            if (customWorkingDir != null && !customWorkingDir.isEmpty()) {
-                File workingDirFile = new File(customWorkingDir);
-                if (!workingDirFile.isAbsolute()) {
-                    workingDirFile = new File(projectPath, customWorkingDir);
-                }
-                if (workingDirFile.exists() && workingDirFile.isDirectory()) {
-                    String resolvedPath = workingDirFile.getAbsolutePath();
-                    LOG.info("[SessionHandler] Using custom working directory: " + resolvedPath);
-                    return resolvedPath;
-                } else {
-                    LOG.warn("[SessionHandler] Custom working directory does not exist: " + workingDirFile.getAbsolutePath() + ", falling back to project root");
-                }
-            }
-        } catch (Exception e) {
-            LOG.warn("[SessionHandler] Failed to read custom working directory: " + e.getMessage());
-        }
-        return projectPath;
+        return com.github.claudecodegui.settings.WorkingDirectoryManager.resolveWorkingDirectory(context.getProject());
     }
 }
