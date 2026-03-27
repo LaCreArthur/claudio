@@ -1,3 +1,13 @@
+##### **v0.6.0** (2026-03-27)
+
+**IDE Context Integration**
+
+Features:
+- `@file` autocomplete in the input bar - type `@` to browse and insert project files by relative path
+- Alt+Enter on any error line - "Ask Claudio about this error" injects the error + file:line into the input bar
+- Hook-based control plane - Claude Code hooks drive permissions and state instead of terminal parsing
+- Hook installer - auto-writes `claudio-hook.sh` and registers it in `~/.claude/settings.json` on startup
+
 ##### **v0.5.0** (2026-03-26)
 
 **Pure Kotlin TerminalView Plugin**
