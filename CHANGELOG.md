@@ -1,3 +1,9 @@
+##### **v0.6.1** (2026-03-28)
+
+**IDE Context Integration**
+
+- Build error injection - "⚠ Build" button in the input bar collects live IDE errors from open editors (filename:line: message) and appends them as context; shows error count on the button; shows "✓ Build" when clean
+
 ##### **v0.6.0** (2026-03-27)
 
 **IDE Context Integration**

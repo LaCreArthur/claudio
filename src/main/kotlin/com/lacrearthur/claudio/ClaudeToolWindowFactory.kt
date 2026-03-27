@@ -1,8 +1,13 @@
 package com.lacrearthur.claudio
 
+import com.intellij.codeInsight.daemon.impl.HighlightInfo
+import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.editor.impl.DocumentMarkupModel
+import com.intellij.openapi.fileEditor.FileEditorManager
+import com.intellij.openapi.fileEditor.TextEditor
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
@@ -81,6 +86,10 @@ class ClaudePanel(
         toolTipText = "Permission mode - click to cycle (Shift+Tab)"
         font = Font("JetBrains Mono", Font.PLAIN, 11)
     }
+    private val buildBtn = JButton("⚠ Build").apply {
+        toolTipText = "Inject current build errors into input bar"
+        font = Font("JetBrains Mono", Font.PLAIN, 11)
+    }
     private lateinit var slashCompletion: SlashCommandCompletion
     private lateinit var atFileCompletion: AtFileCompletion
     private val outputParser = CliOutputParser()
@@ -131,6 +140,7 @@ class ClaudePanel(
             val view = terminalView ?: return@addActionListener
             view.coroutineScope.launch { view.createSendTextBuilder().send("\u001b[Z") }
         }
+        buildBtn.addActionListener { injectBuildErrors() }
 
         val inputBar = buildInputBar()
 
@@ -403,6 +413,30 @@ class ClaudePanel(
         inputArea.caretPosition = inputArea.document.length
     }
 
+    private fun injectBuildErrors() {
+        val errors = mutableListOf<String>()
+        for (editor in FileEditorManager.getInstance(project).allEditors) {
+            val textEditor = editor as? TextEditor ?: continue
+            val document = textEditor.editor.document
+            val fileName = editor.file?.name ?: continue
+            val model = DocumentMarkupModel.forDocument(document, project, false) ?: continue
+            for (h in model.allHighlighters) {
+                val info = h.errorStripeTooltip as? HighlightInfo ?: continue
+                if (info.severity < HighlightSeverity.ERROR) continue
+                val desc = info.description ?: continue
+                val line = document.getLineNumber(h.startOffset) + 1
+                errors.add("$fileName:$line: $desc")
+            }
+        }
+        if (errors.isEmpty()) {
+            appendToInput("Build passed ✓\n\n")
+            buildBtn.text = "✓ Build"
+        } else {
+            appendToInput("Build errors (${errors.size}):\n${errors.joinToString("\n") { "  $it" }}\n\n")
+            buildBtn.text = "⚠ ${errors.size}"
+        }
+    }
+
     private fun buildInputBar(): JPanel {
         val bar = JPanel(BorderLayout())
         bar.border = BorderFactory.createCompoundBorder(
@@ -484,6 +518,8 @@ class ClaudePanel(
         rightPanel.add(histPanel)
         rightPanel.add(Box.createVerticalStrut(4))
         rightPanel.add(permModeBtn)
+        rightPanel.add(Box.createVerticalStrut(4))
+        rightPanel.add(buildBtn)
         rightPanel.add(Box.createVerticalStrut(4))
         rightPanel.add(statusLabel)
 

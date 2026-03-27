@@ -45,8 +45,9 @@ Each feature = detect pattern + show native UI + send response.
 
 Pull the moat features forward. `@file` and error injection are what make this better than a terminal.
 
-- [ ] `@file` autocomplete in input bar (project file index)
-- [ ] Inject build errors / lint warnings / test failures as context
+- [x] `@file` autocomplete in input bar (project file index)
+- [x] Alt+Enter on error lines - "Ask Claudio about this error" (AskClaudeAboutErrorIntention)
+- [x] Inject build errors / lint warnings / test failures as context (build button in input bar)
 - [ ] Multi-tab chat (each tab = independent claude instance)
 - [ ] Tab naming and reordering
 - [ ] Session history sidebar (read ~/.claude/ history, show with timestamps + preview)
