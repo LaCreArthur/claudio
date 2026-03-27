@@ -35,7 +35,9 @@
                     anchor="right"
                     factoryClass="com.lacrearthur.claudio.ClaudeToolWindowFactory"
                     icon="/icons/claudio-icon.svg"
-                    canCloseContents="false"/>
+                    doNotActivateOnStart="true"
+                    canCloseContents="false"
+                    secondary="false"/>
     </extensions>
 
     <actions>

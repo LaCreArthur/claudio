@@ -27,6 +27,12 @@ import javax.swing.*
 private val log = Logger.getInstance("Claudio")
 
 class ClaudeToolWindowFactory : ToolWindowFactory, DumbAware {
+    override suspend fun isApplicableAsync(project: Project): Boolean = true
+
+    // The 3 "deprecated API" warnings from Plugin Verifier are synthetic Kotlin
+    // JVM bridge methods for old Java defaults deprecated in favor of plugin.xml
+    // attributes + isApplicableAsync. Known false-positive (MP-3345 / MP-7604).
+
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         log.warn("[CLAUDE] createToolWindowContent called, project=${project.name}")
         try {
@@ -149,7 +155,7 @@ class ClaudePanel(
             tabsManager.createTabBuilder()
                 .workingDirectory(project.basePath)
                 .tabName("Claude")
-                .shouldAddToToolWindow(false)
+                .shouldAddToToolWindow(false) // @Internal - no public API for detached tabs
                 .deferSessionStartUntilUiShown(true)
                 .requestFocus(true)
                 .createTab()
