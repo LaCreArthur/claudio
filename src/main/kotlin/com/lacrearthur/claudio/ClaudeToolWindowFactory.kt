@@ -33,6 +33,7 @@ import java.awt.event.KeyEvent
 import javax.swing.*
 
 private val log = Logger.getInstance("Claudio")
+private val MONO_11 = Font("JetBrains Mono", Font.PLAIN, 11)
 
 class ClaudeToolWindowFactory : ToolWindowFactory, DumbAware {
     override suspend fun isApplicableAsync(project: Project): Boolean = true
@@ -44,7 +45,7 @@ class ClaudeToolWindowFactory : ToolWindowFactory, DumbAware {
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         log.warn("[CLAUDE] createToolWindowContent called, project=${project.name}")
         try {
-            val panel = ClaudePanel(project, toolWindow.disposable)
+            val panel = ClaudioTabbedPanel(project, toolWindow.disposable)
             val content = ContentFactory.getInstance().createContent(panel, "", false)
             content.isCloseable = false
             toolWindow.contentManager.addContent(content)
@@ -84,11 +85,11 @@ class ClaudePanel(
     private val statusLabel = JLabel("  Starting...")
     private val permModeBtn = JButton("⚡ ?").apply {
         toolTipText = "Permission mode - click to cycle (Shift+Tab)"
-        font = Font("JetBrains Mono", Font.PLAIN, 11)
+        font = MONO_11
     }
     private val buildBtn = JButton("⚠ Build").apply {
         toolTipText = "Inject current build errors into input bar"
-        font = Font("JetBrains Mono", Font.PLAIN, 11)
+        font = MONO_11
     }
     private lateinit var slashCompletion: SlashCommandCompletion
     private lateinit var atFileCompletion: AtFileCompletion
@@ -415,9 +416,11 @@ class ClaudePanel(
 
     private fun injectBuildErrors() {
         val errors = mutableListOf<String>()
+        val seen = mutableSetOf<Any>() // dedup: same Document appears in split views
         for (editor in FileEditorManager.getInstance(project).allEditors) {
             val textEditor = editor as? TextEditor ?: continue
             val document = textEditor.editor.document
+            if (!seen.add(document)) continue
             val fileName = editor.file?.name ?: continue
             val model = DocumentMarkupModel.forDocument(document, project, false) ?: continue
             for (h in model.allHighlighters) {
@@ -490,12 +493,12 @@ class ClaudePanel(
 
         val histUpBtn = JButton("↑").apply {
             toolTipText = "Previous prompt"
-            font = Font("JetBrains Mono", Font.PLAIN, 11)
+            font = MONO_11
             addActionListener { historyStep(-1) }
         }
         val histDownBtn = JButton("↓").apply {
             toolTipText = "Next prompt"
-            font = Font("JetBrains Mono", Font.PLAIN, 11)
+            font = MONO_11
             addActionListener { historyStep(+1) }
         }
 
@@ -531,5 +534,56 @@ class ClaudePanel(
     override fun dispose() {
         log.warn("[CLAUDE] ClaudePanel disposed")
         activityTimer.stop()
+    }
+}
+
+/**
+ * Hosts one or more [ClaudePanel] tabs, each running an independent claude process.
+ * The last tab is a "+" pseudo-tab - selecting it opens a new session.
+ */
+class ClaudioTabbedPanel(
+    private val project: Project,
+    parentDisposable: Disposable,
+) : JPanel(BorderLayout()), Disposable {
+
+    private val tabbedPane = JTabbedPane()
+    private var tabCounter = 0
+    private var addingTab = false // guards against ChangeListener re-entry (EDT only)
+
+    init {
+        Disposer.register(parentDisposable, this)
+        addTab()
+        tabbedPane.addTab(ADD_TAB, JPanel())
+        tabbedPane.addChangeListener {
+            if (addingTab) return@addChangeListener
+            val idx = tabbedPane.selectedIndex
+            if (idx >= 0 && idx == tabbedPane.tabCount - 1 && tabbedPane.getTitleAt(idx) == ADD_TAB) {
+                addTab()
+            }
+        }
+        add(tabbedPane, BorderLayout.CENTER)
+    }
+
+    private fun addTab() {
+        addingTab = true
+        tabCounter++
+        val panel = ClaudePanel(project, this)
+        val insertAt = if (tabbedPane.tabCount > 0 && tabbedPane.getTitleAt(tabbedPane.tabCount - 1) == ADD_TAB)
+            tabbedPane.tabCount - 1
+        else
+            tabbedPane.tabCount
+        tabbedPane.insertTab("Claude $tabCounter", null, panel, null, insertAt)
+        tabbedPane.selectedIndex = insertAt
+        addingTab = false
+    }
+
+    fun appendToInput(text: String) {
+        (tabbedPane.selectedComponent as? ClaudePanel)?.appendToInput(text)
+    }
+
+    override fun dispose() {}
+
+    companion object {
+        private const val ADD_TAB = "+"
     }
 }

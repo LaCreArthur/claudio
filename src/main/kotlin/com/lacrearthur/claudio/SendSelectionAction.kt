@@ -27,7 +27,7 @@ class SendSelectionAction : AnAction() {
         val toolWindow = ToolWindowManager.getInstance(project).getToolWindow("Claude") ?: return
         toolWindow.show {
             val content = toolWindow.contentManager.getContent(0) ?: return@show
-            val panel = content.component as? ClaudePanel ?: return@show
+            val panel = content.component as? ClaudioTabbedPanel ?: return@show
             panel.appendToInput(formatted)
         }
     }

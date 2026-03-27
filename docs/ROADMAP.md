@@ -48,7 +48,7 @@ Pull the moat features forward. `@file` and error injection are what make this b
 - [x] `@file` autocomplete in input bar (project file index)
 - [x] Alt+Enter on error lines - "Ask Claudio about this error" (AskClaudeAboutErrorIntention)
 - [x] Inject build errors / lint warnings / test failures as context (build button in input bar)
-- [ ] Multi-tab chat (each tab = independent claude instance)
+- [x] Multi-tab chat (each tab = independent claude instance)
 - [ ] Tab naming and reordering
 - [ ] Session history sidebar (read ~/.claude/ history, show with timestamps + preview)
 - [ ] Resume previous sessions from history
@@ -91,3 +91,9 @@ Remaining moat features. Things no terminal or standalone app can touch.
 - **Minimize code.** The terminal does the heavy lifting.
 - **Kotlin + Swing only.** No new languages, no npm, no extra runtimes.
 - **Ship incrementally.** Each phase is independently useful.
+
+### Multi-tab chat - sub-items
+
+- [ ] Add second TerminalView tab with independent claude process (each tab = own ClaudePanel instance, tab strip UI)
+- [ ] Tab naming: auto-name "Claude 1/2/..." + support rename via double-click
+- [ ] Tab close / reopen (close terminates the claude subprocess; reopen starts fresh)

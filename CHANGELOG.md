@@ -1,3 +1,9 @@
+##### **v0.6.2** (2026-03-28)
+
+**Multi-Session**
+
+- Multi-tab chat - each tab runs an independent claude process; click "+" to open a new session
+
 ##### **v0.6.1** (2026-03-28)
 
 **IDE Context Integration**
