@@ -4,6 +4,7 @@
 
 **Claude Code on steroids for JetBrains IDEs.**
 
+> [!WARNING]
 > **Early release** - actively in development. This is prototype-stage software. Expect rough edges, not a polished production plugin. Feedback, bug reports, and contributions are very welcome!
 
 Claudio adds the missing native UX on top of the existing `claude code`, with zero compromises: all features, all models, fully compliant with Anthropic's Terms of Service.
