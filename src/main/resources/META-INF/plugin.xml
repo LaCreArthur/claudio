@@ -1,0 +1,52 @@
+<idea-plugin>
+    <id>com.lacrearthur.claudio</id>
+    <name>Claudio - Better Claude Code for Your IDE</name>
+    <vendor>Arthur Scheidel</vendor>
+
+    <description><![CDATA[
+        <p><strong>Claude Code on steroids for JetBrains IDEs.</strong></p>
+        <p>Claudio adds the missing native UX on top of the existing <code>claude code</code>, with zero compromises: all features, all models, fully compliant with Anthropic's Terms of Service.</p>
+
+        <h2>Why Claudio is different</h2>
+        <p>Most Claude integrations for IDEs re-implement the Claude API themselves - their own auth, their own proxy, their own model access. That means handing over credentials, trusting a third party, and hoping they stay within Anthropic's Terms of Service.</p>
+        <p>Claudio doesn't do any of that. It runs <strong>your existing <code>claude code</code></strong> directly. Your auth is the CLI's auth. Your settings are the CLI's settings. This plugin never reads, stores, or touches your credentials - it literally cannot, because it never has access to them.</p>
+        <p>The practical upside: <strong>everything Claude Code can do, Claudio can do</strong> - because it <em>is</em> Claude Code, just with a better JetBrains UX on top. New CLI features land automatically. Your existing config, your CLAUDE.md files, your MCP servers - all of it just works.</p>
+        <p>It's also the only way to use Claude Code with a <strong>Max or Pro subscription</strong> inside a JetBrains IDE that's fully ToS-compliant: no API key needed, no OAuth token extraction, no workarounds.</p>
+
+        <h2>Features</h2>
+        <ul>
+            <li>Interactive Claude Code session in a side panel</li>
+            <li>Native Allow/Deny permission dialogs - no raw CLI prompts</li>
+            <li>Clickable file paths - diffs jump to the first modified line</li>
+            <li>Send editor selection to Claude (Cmd+Alt+K)</li>
+            <li>Prompt history, permission mode badge (⚡), slash command autocomplete</li>
+            <li>Multi-line input (Cmd+Enter), Enter to send</li>
+        </ul>
+        <p>Pure Kotlin + Swing. Zero runtime dependencies. No proxy, no API key.</p>
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>org.jetbrains.plugins.terminal</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <consoleFilterProvider implementation="com.lacrearthur.claudio.ClaudeFileFilterProvider"/>
+        <toolWindow id="Claude"
+                    anchor="right"
+                    factoryClass="com.lacrearthur.claudio.ClaudeToolWindowFactory"
+                    icon="/icons/claudio-icon.svg"
+                    canCloseContents="false"/>
+    </extensions>
+
+    <actions>
+        <action id="ClaudeCodeGUI.SendSelectionAction"
+                class="com.lacrearthur.claudio.SendSelectionAction"
+                text="Send to Claude"
+                description="Send selected code to Claude input bar"
+                icon="/icons/send-to-terminal.svg">
+            <add-to-group group-id="EditorPopupMenu" anchor="first"/>
+            <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt K"/>
+            <keyboard-shortcut keymap="Mac OS X" first-keystroke="meta alt K"/>
+            <keyboard-shortcut keymap="macOS" first-keystroke="meta alt K"/>
+        </action>
+    </actions>
+</idea-plugin>
