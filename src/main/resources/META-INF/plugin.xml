@@ -20,6 +20,8 @@
             <li>Native Allow/Deny permission dialogs - no raw CLI prompts</li>
             <li>Clickable file paths - diffs jump to the first modified line</li>
             <li>Send editor selection to Claude (Cmd+Alt+K)</li>
+            <li><strong>Alt+Enter on any error</strong> - "Ask Claude about this error" injects it directly into the prompt</li>
+            <li><strong>@file autocomplete</strong> in the input bar - type @ to browse and insert project files</li>
             <li>Prompt history, permission mode badge (⚡), slash command autocomplete</li>
             <li>Multi-line input (Cmd+Enter), Enter to send</li>
         </ul>
@@ -34,6 +36,12 @@
         <projectService
             serviceInterface="com.lacrearthur.claudio.test.ClaudioTestService"
             serviceImplementation="com.lacrearthur.claudio.test.ClaudioTestServiceImpl"/>
+
+        <intentionAction>
+            <language/>
+            <className>com.lacrearthur.claudio.AskClaudeAboutErrorIntention</className>
+            <category>Claude</category>
+        </intentionAction>
 
         <consoleFilterProvider implementation="com.lacrearthur.claudio.ClaudeFileFilterProvider"/>
         <toolWindow id="Claude"
