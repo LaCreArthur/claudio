@@ -4,8 +4,8 @@
 
 **Claude Code on steroids for JetBrains IDEs.**
 
-[![JetBrains Marketplace](https://img.shields.io/jetbrains/plugin/v/com.lacrearthur.claudio?label=marketplace)](https://plugins.jetbrains.com/plugin/com.lacrearthur.claudio)
-[![Downloads](https://img.shields.io/jetbrains/plugin/d/com.lacrearthur.claudio)](https://plugins.jetbrains.com/plugin/com.lacrearthur.claudio)
+[![JetBrains Marketplace](https://img.shields.io/jetbrains/plugin/v/30940?label=marketplace)](https://plugins.jetbrains.com/plugin/30940-claudio--better-claude-code-for-your-ide/)
+[![Downloads](https://img.shields.io/jetbrains/plugin/d/30940)](https://plugins.jetbrains.com/plugin/30940-claudio--better-claude-code-for-your-ide/)
 [![GitHub Stars](https://img.shields.io/github/stars/LaCreArthur/claudio?color=ffcb47&labelColor=black&style=flat-square)](https://github.com/LaCreArthur/claudio/stargazers)
 [![GitHub Issues](https://img.shields.io/github/issues/LaCreArthur/claudio?color=ff80eb&labelColor=black&style=flat-square)](https://github.com/LaCreArthur/claudio/issues)
 
