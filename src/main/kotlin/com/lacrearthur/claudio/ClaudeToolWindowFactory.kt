@@ -82,6 +82,7 @@ class ClaudePanel(
         font = Font("JetBrains Mono", Font.PLAIN, 11)
     }
     private lateinit var slashCompletion: SlashCommandCompletion
+    private lateinit var atFileCompletion: AtFileCompletion
     private val outputParser = CliOutputParser()
     private val hookServer = HookServer(project)
 
@@ -112,6 +113,7 @@ class ClaudePanel(
             inputArea.text = "/${cmd.name} "
             inputArea.caretPosition = inputArea.text.length
         }
+        atFileCompletion = AtFileCompletion(project, inputArea).also { it.preload() }
 
         // Register terminal line injector for integration tests
         try { project.service<ClaudioTestServiceImpl>().setTerminalLineInjector { text -> outputParser.feed(text) } } catch (_: Exception) {}
