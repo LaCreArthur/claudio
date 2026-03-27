@@ -28,3 +28,13 @@ tests/e2e/screenshots/
 
 ### Claude Code ###
 .claude
+
+### Scratch / iteration artefacts ###
+.claudio-iterate/
+.playwright-mcp/
+GOAL.md
+STATE.md
+TASK.md
+allure-results/
+color.txt
+scratchpad.md

@@ -3,6 +3,7 @@ package com.lacrearthur.claudio
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
+import java.awt.BorderLayout
 import java.awt.Component
 import java.awt.Dimension
 import java.awt.Font
@@ -10,7 +11,7 @@ import java.awt.event.FocusAdapter
 import java.awt.event.FocusEvent
 import javax.swing.*
 
-// ── Data ──
+// ── Data ────────────────────────────────────────────────────────────────────
 
 data class ParsedQuestion(
     val title: String,
@@ -25,14 +26,17 @@ data class ParsedOption(
     val isFreeText: Boolean = false,
 )
 
+// Used by HookServer for the approval dialog
 data class PermissionRequest(
-    val action: String,   // "execute this bash command", "read this file", etc.
-    val detail: String,   // the command/path being acted on
+    val action: String,
+    val detail: String,
 )
 
-private enum class CaptureMode { NONE, QUESTION, PERMISSION }
+private enum class CaptureMode { NONE, QUESTION }
 
-// ── Parser ──
+// ── Parser ───────────────────────────────────────────────────────────────────
+// Owns only AskUserQuestion detection (☐ prompts).
+// Permission handling is owned by PermissionRequest hook in HookServer.
 
 class CliOutputParser {
     private val log = Logger.getInstance(CliOutputParser::class.java)
@@ -41,7 +45,6 @@ class CliOutputParser {
     private var captureStartTime = 0L
 
     var onQuestion: ((ParsedQuestion) -> Unit)? = null
-    var onPermission: ((PermissionRequest) -> Unit)? = null
     var onPermissionMode: ((String) -> Unit)? = null
 
     private val ansiRegex = Regex("""\u001b(?:\[[0-9;?]*[a-zA-Z]|\][^\u0007]*\u0007|[()][0-9A-B]|[=>])""")
@@ -49,35 +52,23 @@ class CliOutputParser {
     fun feed(rawText: String) {
         val text = ansiRegex.replace(rawText, "")
 
-        // Detect permission mode hint: "⏵⏵ accept edits on (shift+tab to cycle)" or "? for shortcuts" (default)
+        // Permission mode badge: "⏵⏵ accept edits on (shift+tab to cycle)" or "? for shortcuts"
         val modeLine = text.lines().firstOrNull { it.contains("shift+tab to cycle") || it.trim() == "? for shortcuts" }
         if (modeLine != null) {
             val mode = if (modeLine.contains("shift+tab to cycle"))
                 modeLine.trim().replace(Regex("^[^a-zA-Z'\"]+"), "").substringBefore(" on (").trim()
             else
                 "default"
-            if (mode.isNotEmpty()) {
-                log.warn("[PARSER] permission mode: '$mode'")
-                onPermissionMode?.invoke(mode)
-            }
+            if (mode.isNotEmpty()) onPermissionMode?.invoke(mode)
         }
 
-        // Start markers - permission check takes priority (it contains no ☐)
-        if (captureMode == CaptureMode.NONE) {
-            when {
-                text.contains("Do you want to allow Claude") -> {
-                    log.warn("[PARSER] Permission prompt start detected")
-                    captureMode = CaptureMode.PERMISSION
-                    buffer.clear()
-                    captureStartTime = System.currentTimeMillis()
-                }
-                text.contains("☐") -> {
-                    log.warn("[PARSER] AskUserQuestion start detected")
-                    captureMode = CaptureMode.QUESTION
-                    buffer.clear()
-                    captureStartTime = System.currentTimeMillis()
-                }
-            }
+        // AskUserQuestion: start capture on ☐
+        if (captureMode == CaptureMode.NONE && text.contains("☐")) {
+            val trigger = text.lines().firstOrNull { it.contains("☐") }?.trim()?.take(80) ?: ""
+            log.warn("[PARSER] QUESTION capture start: '$trigger'")
+            captureMode = CaptureMode.QUESTION
+            buffer.clear()
+            captureStartTime = System.currentTimeMillis()
         }
 
         if (captureMode == CaptureMode.NONE) return
@@ -85,45 +76,29 @@ class CliOutputParser {
         buffer.append(text)
 
         if (System.currentTimeMillis() - captureStartTime > 30_000) {
-            log.warn("[PARSER] Capture timed out (mode=$captureMode)")
+            log.warn("[PARSER] capture timed out")
             captureMode = CaptureMode.NONE
             buffer.clear()
             return
         }
 
-        when (captureMode) {
-            CaptureMode.QUESTION -> {
-                if (buffer.contains("────")) {
-                    captureMode = CaptureMode.NONE
-                    try {
-                        parseQuestion(buffer.toString())?.let { onQuestion?.invoke(it) }
-                    } catch (e: Exception) {
-                        log.warn("[PARSER] Failed to parse AskUserQuestion: ${e.message}")
-                    }
-                    buffer.clear()
+        // End: separator line signals question is fully rendered
+        if (captureMode == CaptureMode.QUESTION && buffer.contains("────")) {
+            captureMode = CaptureMode.NONE
+            try {
+                parseQuestion(buffer.toString())?.let { question ->
+                    log.warn("[PARSER] QUESTION firing: '${question.title}' opts=${question.options.mapIndexed { i, o -> "$i:${o.label}${if (o.isFreeText) "(FT)" else ""}" }}")
+                    onQuestion?.invoke(question)
                 }
+            } catch (e: Exception) {
+                log.warn("[PARSER] failed to parse question: ${e.message}")
             }
-            CaptureMode.PERMISSION -> {
-                // End: we have all 3 options (option 3 = "No, and tell Claude")
-                if (buffer.contains("3.") && buffer.contains("No")) {
-                    captureMode = CaptureMode.NONE
-                    try {
-                        parsePermission(buffer.toString())?.let { onPermission?.invoke(it) }
-                    } catch (e: Exception) {
-                        log.warn("[PARSER] Failed to parse permission prompt: ${e.message}")
-                    }
-                    buffer.clear()
-                }
-            }
-            CaptureMode.NONE -> {}
+            buffer.clear()
         }
-
     }
 
     private fun parseQuestion(raw: String): ParsedQuestion? {
         val lines = raw.lines()
-
-        // Title: line containing ☐
         val titleLine = lines.firstOrNull { it.contains("☐") } ?: return null
         val title = titleLine.substringAfter("☐").trim()
 
@@ -150,7 +125,6 @@ class CliOutputParser {
             } else if (!foundFirstOption) {
                 bodyLines.add(trimmed)
             } else if (lastOptionIdx >= 0 && options.isNotEmpty()) {
-                // Description line for previous option (indented text after option)
                 val last = options.last()
                 if (last.description.isEmpty()) {
                     options[options.lastIndex] = last.copy(description = trimmed)
@@ -158,37 +132,12 @@ class CliOutputParser {
             }
         }
 
-        if (options.isEmpty()) return null
-
-        val question = ParsedQuestion(title, bodyLines.joinToString("\n"), options)
-        log.warn("[PARSER] AskUserQuestion: '${question.title}' with ${options.size} options")
-        return question
-    }
-
-    private fun parsePermission(raw: String): PermissionRequest? {
-        val lines = raw.lines().map { it.trim() }.filter { it.isNotEmpty() }
-
-        // Find "Do you want to allow Claude to X?" line
-        val actionLine = lines.firstOrNull { it.contains("Do you want to allow Claude") } ?: return null
-        val action = actionLine
-            .substringAfter("allow Claude to", "")
-            .trimEnd('?')
-            .trim()
-            .ifEmpty { "perform this action" }
-
-        // Everything between the action line and the first option is the detail (command/path)
-        val actionIdx = lines.indexOf(actionLine)
-        val firstOptionIdx = lines.indexOfFirst { it.matches(Regex("""[❯\s]*1\..+""")) }
-        val detail = if (firstOptionIdx > actionIdx + 1)
-            lines.subList(actionIdx + 1, firstOptionIdx).joinToString("\n")
-        else ""
-
-        log.warn("[PARSER] Permission: action='$action' detail='${detail.take(100)}'")
-        return PermissionRequest(action, detail)
+        log.warn("[PARSER] AskUserQuestion: '$title' with ${options.size} options (freeText=${options.isEmpty()})")
+        return ParsedQuestion(title, bodyLines.joinToString("\n"), options)
     }
 }
 
-// ── Dialog ──
+// ── AskUserQuestion Dialog ───────────────────────────────────────────────────
 
 class AskUserQuestionDialog(
     project: Project,
@@ -262,7 +211,7 @@ class AskUserQuestionDialog(
     fun isFreeTextSelected(): Boolean = question.options.getOrNull(selectedIndex)?.isFreeText == true
 }
 
-// ── Permission Dialog ──
+// ── Permission Dialog (used by HookServer) ───────────────────────────────────
 
 enum class PermissionChoice { ALLOW_ONCE, ALLOW_ALWAYS, DENY }
 
@@ -310,9 +259,9 @@ class PermissionDialog(
 
         val group = ButtonGroup()
         listOf(
-            "Allow once" to PermissionChoice.ALLOW_ONCE,
+            "Allow once"                  to PermissionChoice.ALLOW_ONCE,
             "Always allow for this session" to PermissionChoice.ALLOW_ALWAYS,
-            "Deny" to PermissionChoice.DENY,
+            "Deny"                        to PermissionChoice.DENY,
         ).forEachIndexed { idx, (label, value) ->
             val radio = JRadioButton(label).apply {
                 isSelected = idx == 0
@@ -329,11 +278,81 @@ class PermissionDialog(
 
     fun getChoice(): PermissionChoice = choice
 
-    // Override OK/Cancel to both close - actual choice read via getChoice()
     override fun createActions(): Array<Action> = arrayOf(okAction, cancelAction)
-    override fun doOKAction() {
-        if (choice == PermissionChoice.DENY) choice = PermissionChoice.DENY
-        super.doOKAction()
+    override fun doOKAction() { super.doOKAction() }
+    override fun doCancelAction() { choice = PermissionChoice.DENY; super.doCancelAction() }
+}
+
+// ── Plan Exit Dialog (used by HookServer for ExitPlanMode) ───────────────────
+
+class PlanExitDialog(project: Project) : DialogWrapper(project) {
+
+    init {
+        title = "Exit Plan Mode"
+        setOKButtonText("Start Coding")
+        setCancelButtonText("Keep Planning")
+        init()
+    }
+
+    override fun createCenterPanel(): JComponent {
+        val panel = JPanel()
+        panel.layout = BoxLayout(panel, BoxLayout.Y_AXIS)
+        panel.border = BorderFactory.createEmptyBorder(8, 8, 8, 8)
+
+        val label = JLabel("<html><b>Claude is ready to start coding.</b><br><br>" +
+                "Approve the plan and let Claude implement it?</html>")
+        label.alignmentX = Component.LEFT_ALIGNMENT
+        panel.add(label)
+        panel.preferredSize = Dimension(380, panel.preferredSize.height)
+        return panel
     }
 }
 
+// ── Free-Text Question Dialog ─────────────────────────────────────────────────
+
+class FreeTextQuestionDialog(
+    project: Project,
+    private val question: ParsedQuestion,
+) : DialogWrapper(project) {
+
+    private val textArea = JTextArea(4, 40)
+
+    init {
+        title = "Claude: ${question.title}"
+        setOKButtonText("Send")
+        init()
+    }
+
+    override fun createCenterPanel(): JComponent {
+        val panel = JPanel()
+        panel.layout = BoxLayout(panel, BoxLayout.Y_AXIS)
+        panel.border = BorderFactory.createEmptyBorder(8, 8, 8, 8)
+
+        if (question.body.isNotBlank()) {
+            val bodyLabel = JLabel("<html><p style='width:350px'>${question.body.replace("\n", "<br>")}</p></html>")
+            bodyLabel.alignmentX = Component.LEFT_ALIGNMENT
+            panel.add(bodyLabel)
+            panel.add(Box.createVerticalStrut(12))
+        }
+
+        textArea.lineWrap = true
+        textArea.wrapStyleWord = true
+        textArea.font = Font("JetBrains Mono", Font.PLAIN, 13)
+        textArea.border = BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(UIManager.getColor("Separator.foreground")),
+            BorderFactory.createEmptyBorder(4, 6, 4, 6),
+        )
+        textArea.alignmentX = Component.LEFT_ALIGNMENT
+
+        val scroll = JScrollPane(textArea).apply {
+            alignmentX = Component.LEFT_ALIGNMENT
+            preferredSize = Dimension(420, 100)
+        }
+        panel.add(scroll)
+        panel.preferredSize = Dimension(440, panel.preferredSize.height)
+        return panel
+    }
+
+    override fun getPreferredFocusedComponent(): JComponent = textArea
+    fun getText(): String = textArea.text.trim()
+}

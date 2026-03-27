@@ -1,0 +1,130 @@
+package com.lacrearthur.claudio.test
+
+import com.intellij.openapi.components.Service
+import com.intellij.openapi.components.service
+import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.project.Project
+import java.net.HttpURLConnection
+import java.net.URI
+import java.util.concurrent.atomic.AtomicReference
+
+private val log = Logger.getInstance("ClaudioTestService")
+
+@Service(Service.Level.PROJECT)
+class ClaudioTestServiceImpl(private val project: Project) : ClaudioTestService {
+
+    private val lastEvent          = AtomicReference<String?>(null)
+    private val lastResponse       = AtomicReference<String?>(null)
+    private val activeDialog       = AtomicReference<String?>(null)
+    private val lastParsedQuestion = AtomicReference<String?>(null)
+    private val lastPromptMatch    = AtomicReference<String?>(null)
+    @Volatile private var hookPort          = 0
+    @Volatile private var sessionReady      = false
+    @Volatile private var cliProcessStatus  = "not_started"
+    @Volatile private var terminalLineInjector:  ((String) -> Unit)? = null
+    @Volatile private var terminalInputSender:   ((String) -> Unit)? = null
+    private val transcriptLock = Any()
+    private val transcriptBuffer = StringBuilder(1024)
+
+    // ── Wiring hooks (called from HookServer / ClaudePanel) ─────────────────
+
+    fun setHookPort(port: Int) {
+        hookPort = port
+        log.warn("[TEST] hook port registered: $port")
+    }
+
+    fun recordEvent(json: String)        { lastEvent.set(json) }
+    fun recordResponse(json: String)     { lastResponse.set(json) }
+    fun setActiveDialog(type: String?)   { activeDialog.set(type) }
+    fun recordParsedQuestion(title: String) { lastParsedQuestion.set(title) }
+
+    fun setTerminalLineInjector(callback: (String) -> Unit) { terminalLineInjector = callback }
+    fun setTerminalInputSender(callback: (String) -> Unit)  { terminalInputSender  = callback }
+
+    fun setSessionReady(ready: Boolean) {
+        sessionReady = ready
+        log.warn("[TEST] sessionReady=$ready")
+    }
+
+    fun setCliProcessStatus(status: String) {
+        cliProcessStatus = status
+        log.warn("[TEST] cliProcessStatus=$status")
+    }
+
+    fun appendTranscript(text: String) {
+        synchronized(transcriptLock) {
+            transcriptBuffer.append(text)
+            if (transcriptBuffer.length > 1000) {
+                transcriptBuffer.delete(0, transcriptBuffer.length - 1000)
+            }
+        }
+        // Detect Claude ready prompt: line ending with "> " (Claude CLI waiting for input)
+        val trimmed = text.trimEnd()
+        if (trimmed.endsWith(">") || trimmed.endsWith("> ")) {
+            lastPromptMatch.set(trimmed.takeLast(80))
+        }
+    }
+
+    // ── ClaudioTestService ───────────────────────────────────────────────────
+
+    override fun getHookServerPort()           = hookPort
+    override fun getLastEventReceived()        = lastEvent.get()
+    override fun getLastResponseSent()         = lastResponse.get()
+    override fun getActiveDialogType()         = activeDialog.get()
+    override fun getLastParsedQuestionTitle()  = lastParsedQuestion.get()
+    override fun isClaudeSessionReady()        = sessionReady
+    override fun getCliProcessStatus()         = cliProcessStatus
+    override fun getLastTerminalPromptMatch()  = lastPromptMatch.get()
+    override fun getRecentTerminalTranscript() = synchronized(transcriptLock) { transcriptBuffer.toString() }
+
+    /**
+     * Sends the JSON directly to the HookServer's HTTP endpoint - same code path as real hooks.
+     * Runs on a daemon thread so Driver doesn't block waiting for HookServer to respond
+     * (which may itself block waiting for a dialog on the EDT).
+     */
+    override fun injectHookEvent(json: String) {
+        val port = hookPort
+        require(port > 0) { "Hook server not started yet (port=$port)" }
+        log.warn("[TEST] injecting: ${json.take(120)}")
+        Thread {
+            try {
+                val conn = URI.create("http://127.0.0.1:$port/event").toURL().openConnection() as HttpURLConnection
+                conn.requestMethod = "POST"
+                conn.setRequestProperty("Content-Type", "application/json")
+                conn.connectTimeout = 5_000
+                conn.readTimeout   = 30_000
+                conn.doOutput      = true
+                conn.outputStream.use { it.write(json.toByteArray()) }
+                conn.inputStream.use { it.readBytes() }  // consume response
+                conn.disconnect()
+            } catch (e: Exception) {
+                log.warn("[TEST] injectHookEvent failed: ${e.message}")
+            }
+        }.also { it.isDaemon = true }.start()
+    }
+
+    override fun injectTerminalLine(text: String) {
+        val injector = terminalLineInjector
+        if (injector == null) log.warn("[TEST] injectTerminalLine: no injector registered yet")
+        else { log.warn("[TEST] injectTerminalLine: feeding ${text.take(80)}"); injector(text) }
+    }
+
+    override fun sendTerminalInput(text: String) {
+        val sender = terminalInputSender
+        if (sender == null) log.warn("[TEST] sendTerminalInput: no sender registered yet")
+        else { log.warn("[TEST] sendTerminalInput: '${text.take(80)}'"); sender(text) }
+    }
+
+    override fun clearHistory() {
+        lastEvent.set(null)
+        lastResponse.set(null)
+        activeDialog.set(null)
+        lastParsedQuestion.set(null)
+        lastPromptMatch.set(null)
+        synchronized(transcriptLock) { transcriptBuffer.clear() }
+    }
+
+    companion object {
+        fun getInstance(project: Project): ClaudioTestServiceImpl = project.service()
+    }
+}

@@ -30,6 +30,11 @@
     <depends>org.jetbrains.plugins.terminal</depends>
 
     <extensions defaultExtensionNs="com.intellij">
+        <!-- Test observability service: exposes internal state to Driver API stubs during integration tests -->
+        <projectService
+            serviceInterface="com.lacrearthur.claudio.test.ClaudioTestService"
+            serviceImplementation="com.lacrearthur.claudio.test.ClaudioTestServiceImpl"/>
+
         <consoleFilterProvider implementation="com.lacrearthur.claudio.ClaudeFileFilterProvider"/>
         <toolWindow id="Claude"
                     anchor="right"

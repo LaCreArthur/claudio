@@ -33,45 +33,46 @@ Each feature = detect pattern + show native UI + send response.
 - [x] Clickable file paths - diffs jump to first modified line
 - [x] Output listener wired via TerminalView API
 
-## Phase 2: Interactive Prompts - IN PROGRESS
+## Phase 2: Interactive Prompts - DONE
 
 - [x] AskUserQuestion detection (native dialog, answer sent back)
 - [x] Permission prompt detection (Allow/Deny dialog)
-- [ ] Plan approval detection (plan mode - review/approve dialog)
-- [ ] Tool confirmation patterns
-- [ ] Free-text input for AskUserQuestion (not just multiple choice)
+- [x] Plan approval detection (plan mode - review/approve dialog)
+- [x] Tool confirmation patterns (robust multi-pattern permission detection)
+- [x] Free-text input for AskUserQuestion (not just multiple choice)
 
-## Phase 3: Multi-Session Management
+## Phase 3: IDE Context + Multi-Session
 
-The #1 requested feature across every competitor. Multiple agents, one window.
+Pull the moat features forward. `@file` and error injection are what make this better than a terminal.
 
+- [ ] `@file` autocomplete in input bar (project file index)
+- [ ] Inject build errors / lint warnings / test failures as context
 - [ ] Multi-tab chat (each tab = independent claude instance)
 - [ ] Tab naming and reordering
 - [ ] Session history sidebar (read ~/.claude/ history, show with timestamps + preview)
 - [ ] Resume previous sessions from history
-- [ ] Session favorites / pinning
-- [ ] Export session to markdown
 
 ## Phase 4: Agent Presets + Usage Analytics
 
-Turn tabs into purpose-built agents. Show what they cost.
+Turn tabs into purpose-built agents (Roo-killer). Show what they cost.
 
 - [ ] Agent presets (named configs: system prompt, permission mode, working directory, model)
 - [ ] One-click launch: "Backend Agent", "Review Agent", "Test Agent"
+- [ ] Sticky model per preset (Architect uses reasoning model, Code uses fast one)
 - [ ] Token/cost display per session (parse CLI output)
-- [ ] Usage summary widget in panel header or status bar
+- [ ] Live cost ticker in status bar while generating
 - [ ] Per-project cost tracking over time
 
 ## Phase 5: Deep IDE Integration
 
-Things only an IDE plugin can do. This is the moat.
+Remaining moat features. Things no terminal or standalone app can touch.
 
-- [ ] Inject build errors / lint warnings / test failures as context
 - [ ] Gutter action: "Fix with Claude" on error lines
-- [ ] `@file` autocomplete in input bar (project file index)
+- [ ] Checkpoint list with diff preview (visual rewind)
 - [ ] File change notifications (detect writes - show diff in editor)
-- [ ] Rewind detection + native UI
+- [ ] CLAUDE.md indicator (show active files, edit from plugin)
 - [ ] MCP server status panel (connected servers, tools, enable/disable)
+- [ ] One-click MCP setup (browse + install servers)
 
 ## Phase 6: Polish
 
@@ -80,6 +81,8 @@ Things only an IDE plugin can do. This is the moat.
 - [ ] Sound/notification on task completion (window unfocused)
 - [ ] Keyboard shortcuts: Escape - return to editor, Cmd+Shift+C - focus Claude
 - [ ] Status bar widget (session state, model, cost)
+- [ ] Session favorites / pinning
+- [ ] Export session to markdown
 
 ## Principles
 

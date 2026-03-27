@@ -1,16 +1,19 @@
 package com.lacrearthur.claudio
 
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
+import com.lacrearthur.claudio.test.ClaudioTestServiceImpl
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.terminal.frontend.toolwindow.TerminalToolWindowTabsManager
 import com.intellij.terminal.frontend.view.TerminalView
 import com.intellij.terminal.frontend.view.TerminalViewSessionState
 import com.intellij.ui.content.ContentFactory
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
@@ -80,6 +83,7 @@ class ClaudePanel(
     }
     private lateinit var slashCompletion: SlashCommandCompletion
     private val outputParser = CliOutputParser()
+    private val hookServer = HookServer(project)
 
     // Prompt history: up/down arrow recalls previous sends
     private val promptHistory = mutableListOf<String>()
@@ -91,6 +95,11 @@ class ClaudePanel(
     init {
         log.warn("[CLAUDE] ClaudePanel init, project=${project.name} basePath=${project.basePath}")
         Disposer.register(parentDisposable, this)
+        Disposer.register(this, hookServer)
+
+        // Hook-based control plane: structured JSON events from Claude Code
+        HookInstaller.install()
+        hookServer.start()
 
         try {
             launchClaude()
@@ -104,8 +113,15 @@ class ClaudePanel(
             inputArea.caretPosition = inputArea.text.length
         }
 
-        outputParser.onQuestion = { question -> showAskUserDialog(question) }
-        outputParser.onPermission = { request -> showPermissionDialog(request) }
+        // Register terminal line injector for integration tests
+        try { project.service<ClaudioTestServiceImpl>().setTerminalLineInjector { text -> outputParser.feed(text) } } catch (_: Exception) {}
+
+        // Parser owns only AskUserQuestion. Permissions are owned by PermissionRequest hook.
+        outputParser.onQuestion = { question ->
+            try { project.service<ClaudioTestServiceImpl>().recordParsedQuestion(question.title) } catch (_: Exception) {}
+            if (question.options.isEmpty()) showFreeTextDialog(question)
+            else showAskUserDialog(question)
+        }
         outputParser.onPermissionMode = { mode ->
             SwingUtilities.invokeLater { permModeBtn.text = "⚡ $mode" }
         }
@@ -180,16 +196,36 @@ class ClaudePanel(
                 view.sessionState.first { it is TerminalViewSessionState.Running }
                 log.warn("[CLAUDE] terminal Running - sending 'claude'")
                 updateStatusText("Launching Claude...")
-                view.createSendTextBuilder().shouldExecute().send("claude")
+                val launchCmd = if (hookServer.port > 0)
+                    "CLAUDIO_HOOK_PORT=${hookServer.port} claude"
+                else
+                    "claude"
+                view.createSendTextBuilder().shouldExecute().send(launchCmd)
                 log.warn("[CLAUDE] 'claude' sent")
+
+                try {
+                    val testSvc = project.service<ClaudioTestServiceImpl>()
+                    testSvc.setSessionReady(true)
+                    testSvc.setCliProcessStatus("running")
+                    testSvc.setTerminalInputSender { text ->
+                        view.coroutineScope.launch { view.createSendTextBuilder().shouldExecute().send(text) }
+                    }
+                } catch (_: Exception) {}
 
                 wireOutputListener(view)
 
                 view.sessionState.first { it is TerminalViewSessionState.Terminated }
                 log.warn("[CLAUDE] terminal Terminated - scheduling restart")
                 updateStatusText("Session ended. Restarting...")
+                try {
+                    val testSvc = project.service<ClaudioTestServiceImpl>()
+                    testSvc.setSessionReady(false)
+                    testSvc.setCliProcessStatus("exited(0)")
+                } catch (_: Exception) {}
                 delay(1500)
                 SwingUtilities.invokeLater { launchClaude() }
+            } catch (e: CancellationException) {
+                throw e  // Never swallow cancellation - coroutines contract
             } catch (e: Throwable) {
                 log.error("[CLAUDE] coroutine error in launchClaude", e)
                 showError("Terminal session error:\n${e.message}")
@@ -201,39 +237,23 @@ class ClaudePanel(
         log.warn("[CLAUDE] wireOutputListener")
         try {
             view.outputModels.regular.addListener(this, object : TerminalOutputModelListener {
+                private val spinnerChars = setOf('✶', '✳', '✢', '·', '✻', '✽')
                 override fun afterContentChanged(event: TerminalContentChangeEvent) {
                     if (event.isTypeAhead || event.isTrimming) return
                     lastOutputTime = System.currentTimeMillis()
                     val newText = event.newText.toString()
                     if (newText.isNotBlank()) {
+                        // Skip logging pure spinner frames - they flood logs without signal
+                        if (newText.trim().all { it in spinnerChars }) return
                         log.warn("[CLAUDE_OUT] ${newText.take(300).replace("\n", "\\n")}")
                         outputParser.feed(newText)
+                        try { project.service<ClaudioTestServiceImpl>().appendTranscript(newText) } catch (_: Exception) {}
                     }
                 }
             })
             log.warn("[CLAUDE] output listener wired")
         } catch (e: Throwable) {
             log.error("[CLAUDE] wireOutputListener failed", e)
-        }
-    }
-
-    private fun showPermissionDialog(request: PermissionRequest) {
-        log.warn("[CLAUDE] showPermissionDialog: action='${request.action}'")
-        SwingUtilities.invokeLater {
-            val dialog = PermissionDialog(project, request)
-            dialog.showAndGet()
-            val choice = dialog.getChoice()
-            log.warn("[CLAUDE] permission choice: $choice")
-            val view = terminalView ?: return@invokeLater
-            view.coroutineScope.launch {
-                delay(200)
-                when (choice) {
-                    PermissionChoice.ALLOW_ONCE    -> { /* option 1 already selected */ }
-                    PermissionChoice.ALLOW_ALWAYS  -> { view.createSendTextBuilder().send("\u001b[B"); delay(80) }
-                    PermissionChoice.DENY          -> { repeat(2) { view.createSendTextBuilder().send("\u001b[B"); delay(80) } }
-                }
-                view.createSendTextBuilder().send("\r")
-            }
         }
     }
 
@@ -247,20 +267,43 @@ class ClaudePanel(
         }
     }
 
+    private fun showFreeTextDialog(question: ParsedQuestion) {
+        log.warn("[CLAUDE] showFreeTextDialog: title='${question.title}'")
+        SwingUtilities.invokeLater {
+            val dialog = FreeTextQuestionDialog(project, question)
+            if (dialog.showAndGet()) {
+                val text = dialog.getText()
+                if (text.isNotEmpty()) answerFreeText(text)
+            }
+        }
+    }
+
+    private fun answerFreeText(text: String) {
+        val view = terminalView ?: return
+        log.warn("[CLAUDE] answerFreeText: '${text.take(80)}'")
+        view.coroutineScope.launch {
+            delay(200)
+            view.createSendTextBuilder().shouldExecute().send(text)
+        }
+    }
+
     private fun answerQuestion(optionIndex: Int, isFreeText: Boolean, freeText: String) {
         val view = terminalView ?: return
-        log.warn("[CLAUDE] answerQuestion idx=$optionIndex freeText=$isFreeText text='$freeText'")
+        log.warn("[CLAUDE] answerQuestion idx=$optionIndex isFreeText=$isFreeText text='${freeText.take(80)}'")
         view.coroutineScope.launch {
             delay(200)
             repeat(optionIndex) {
                 view.createSendTextBuilder().send("\u001b[B")
                 delay(100)
             }
-            view.createSendTextBuilder().send("\r")
-            delay(100)
             if (isFreeText && freeText.isNotEmpty()) {
-                delay(300)
-                view.createSendTextBuilder().shouldExecute().send(freeText)
+                // Navigate to the option but don't press Enter - CC lets you type directly
+                // into the highlighted free-text field. Send text then \r to submit.
+                delay(200)
+                log.warn("[CLAUDE] answerQuestion sending free text '${freeText.take(80)}'")
+                view.createSendTextBuilder().send(freeText + "\r")
+            } else {
+                view.createSendTextBuilder().send("\r")
             }
         }
     }

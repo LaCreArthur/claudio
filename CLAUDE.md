@@ -10,25 +10,32 @@ JetBrains plugin that embeds the `claude` CLI in a TerminalView widget with nati
 
 ```
 src/main/kotlin/com/lacrearthur/claudio/
-├── ClaudeToolWindowFactory.kt   # ClaudePanel: terminal + input bar + output wiring (258 LOC)
-├── CliOutputParser.kt           # Output pattern detection + AskUserQuestion dialog (204 LOC)
-├── SendSelectionAction.kt       # Cmd+Alt+K: editor selection → input bar (41 LOC)
-├── SlashCommandCompletion.kt    # Slash command autocomplete popup (160 LOC)
-├── SlashCommandRenderer.kt      # Popup cell renderer (32 LOC)
+├── ClaudeToolWindowFactory.kt   # ClaudePanel: terminal + input bar + hook wiring
+├── HookServer.kt                # HTTP server - routes PreToolUse/PermissionRequest/Notification
+├── HookInstaller.kt             # Writes hook script + registers in ~/.claude/settings.json
+├── CliOutputParser.kt           # Terminal text parser (fallback for AskUserQuestion only)
+├── ClaudePathFilter.kt          # Clickable file paths in terminal output
+├── SendSelectionAction.kt       # Cmd+Alt+K: editor selection to input bar
+├── SlashCommandCompletion.kt    # Slash command autocomplete popup
+├── SlashCommandRenderer.kt      # Popup cell renderer
 src/main/resources/
 ├── META-INF/plugin.xml          # Plugin manifest
 ├── icons/                       # SVG/PNG icons
 ```
 
-**Total: 695 LOC Kotlin. No Java, no TypeScript, no npm.**
+**Pure Kotlin + Swing. No Java, no TypeScript, no npm.**
 
 ### How It Works
 
 1. Tool window "Claude" embeds a `TerminalView` (2025.3 Reworked Terminal API) running `claude` interactively
-2. Input bar (bottom) lets users compose prompts with Cmd+Enter to send
-3. Output listener reads all terminal output via `outputModels.regular.addListener()`
-4. `CliOutputParser` detects interactive prompts (AskUserQuestion `☐` pattern) → shows native Swing dialog → sends answer back via escape sequences
-5. The CLI handles everything: auth, streaming, tools, permissions, CLAUDE.md
+2. Plugin launches `claude` with `CLAUDIO_HOOK_PORT=<port>` env var to scope hooks to this session
+3. **Hooks (primary control plane):** Claude Code fires structured JSON events to `HookServer` via HTTP
+   - `PreToolUse` - policy layer (allow/deny/ask)
+   - `PermissionRequest` - native approval dialog driven by structured `tool_name`/`tool_input`
+   - `Notification` - status signals (permission_prompt, elicitation_dialog)
+4. **Parser (fallback):** `CliOutputParser` detects AskUserQuestion `☐` pattern for user questions (no hook equivalent yet)
+5. Input bar (bottom) lets users compose prompts, Cmd+Enter to send
+6. The CLI handles everything else: auth, streaming, tools, rendering, CLAUDE.md
 
 ### Key API (TerminalView, 2025.3)
 
@@ -52,7 +59,24 @@ tab.view.sessionState  // StateFlow<NotStarted | Running | Terminated>
 
 **Do NOT use `useBracketedPasteMode()`** -injects text but doesn't submit.
 
-### Output → Native UI Pattern (proven)
+### Hook Control Plane (primary)
+
+```
+Claude CLI (PreToolUse/PermissionRequest/Notification)
+    ↓ hook fires, stdin = structured JSON
+claudio-hook.sh (checks CLAUDIO_HOOK_PORT)
+    ↓ curl POST to plugin
+HookServer (routes by hook_event_name)
+    ↓ PermissionRequest: show native dialog
+hookSpecificOutput JSON response
+    ↓ CLI receives structured decision
+```
+
+Response format: always `hookSpecificOutput` envelope.
+- PreToolUse: `permissionDecision` (allow/deny/ask)
+- PermissionRequest: `decision.behavior` (allow/deny)
+
+### Terminal Parser (fallback for AskUserQuestion)
 
 ```
 Terminal output → CliOutputParser.feed(text)
@@ -64,7 +88,7 @@ Escape sequences sent back: \u001b[B (down) + \r (enter)
 CLI receives the answer
 ```
 
-This same pattern applies to permissions, plan approval, and any interactive prompt.
+Parser is emergency fallback only. No hook equivalent for AskUserQuestion yet.
 
 ## Build Version Matrix
 
@@ -104,9 +128,37 @@ pkill -f Rider && sleep 2 && open -a Rider
 
 - **Embedded terminal, not custom renderer**: The CLI handles all rendering (ANSI, markdown, tool cards). We add UX on top.
 - **CLI subprocess, not direct SDK**: OAuth + SDK = Haiku only. CLI = all Max models.
-- **Output parsing, not NDJSON**: We read the rendered terminal output and detect patterns. No `--output-format stream-json` needed.
+- **Hooks as control plane, not terminal parsing**: Structured JSON events from CC hooks drive permissions and state. Parser is fallback only.
 - **Pure Kotlin + Swing.** Gradle is the only build system.
-- **Native dialogs over terminal prompts**: Detect interactive CLI prompts → show IntelliJ DialogWrapper → send answer back. Best of both worlds.
+- **Native dialogs over terminal prompts**: PermissionRequest hook shows IntelliJ DialogWrapper, returns structured decision. Terminal never shows the prompt.
+
+## Integration Tests (JetBrains Starter + Driver)
+
+**Docs:** `.claude/references/jb-integration-tests-*.md` (fetched from official docs)
+
+### Documented contracts (do not guess these)
+- `runIdeWithDriver()` starts the IDE process
+- `useDriverAndCloseIde { }` is where IDE interactions happen - the block DOES execute
+- `@Remote("fqn", plugin = "com.lacrearthur.claudio")` - `plugin=` is REQUIRED
+- Remote method types: primitives, String, arrays/lists of those, other `@Remote` refs only. No suspend, no complex objects.
+- IDE version must be pinned explicitly - Starter downloads latest EAP by default
+- Debug UI: `http://localhost:63343/api/remote-driver/` - inspect live component tree during a paused test
+
+### Hard stops (burned by these, never again)
+- Never glob `~/.gradle/caches` for IDE artifacts - use Starter's built-in download or `withVersion(...)`
+- Never synthesize `.app` bundles with symlinks - macOS signing rejects them silently (process dies before logs)
+- Never use `ExistingIdeInstaller` with extracted `Contents/` directories
+- Never mix 3 problem classes in one debug pass: (1) JetBrains contract, (2) macOS signing, (3) plugin logic
+- Never chase "does the lambda run?" for more than one proof cycle - a sentinel `assertTrue(blockExecuted)` is definitive
+
+### Bad patterns (wasted cycles on these)
+- "53s for 4 tests = fake run" - WRONG. Starter uses warm IDE cache after first download. Speed is not evidence.
+- Generating theories from partial evidence before reading the docs for that API - always doc first.
+
+### IDE version alignment (current gap)
+- Plugin targets `sinceBuild = '253'` (2025.3)
+- Starter currently downloads IU 261.22158.121 (2026.1 EAP) - version mismatch
+- Fix: use `withVersion("2025.3")` or equivalent in `IdeProductProvider.IU` call
 
 ## Code Style
 
