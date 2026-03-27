@@ -49,7 +49,7 @@ Pull the moat features forward. `@file` and error injection are what make this b
 - [x] Alt+Enter on error lines - "Ask Claudio about this error" (AskClaudeAboutErrorIntention)
 - [x] Inject build errors / lint warnings / test failures as context (build button in input bar)
 - [x] Multi-tab chat (each tab = independent claude instance)
-- [ ] Tab naming and reordering
+- [x] Tab naming (double-click to rename inline)
 - [ ] Session history sidebar (read ~/.claude/ history, show with timestamps + preview)
 - [ ] Resume previous sessions from history
 

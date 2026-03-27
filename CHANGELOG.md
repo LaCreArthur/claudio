@@ -1,3 +1,9 @@
+##### **v0.6.3** (2026-03-28)
+
+**Multi-Session**
+
+- Tab renaming - double-click any tab title to rename it inline; Enter or focus-out commits
+
 ##### **v0.6.2** (2026-03-28)
 
 **Multi-Session**

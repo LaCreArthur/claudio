@@ -28,8 +28,7 @@ import kotlinx.coroutines.withTimeout
 import org.jetbrains.plugins.terminal.view.TerminalContentChangeEvent
 import org.jetbrains.plugins.terminal.view.TerminalOutputModelListener
 import java.awt.*
-import java.awt.event.ActionEvent
-import java.awt.event.KeyEvent
+import java.awt.event.*
 import javax.swing.*
 
 private val log = Logger.getInstance("Claudio")
@@ -573,6 +572,7 @@ class ClaudioTabbedPanel(
         else
             tabbedPane.tabCount
         tabbedPane.insertTab("Claude $tabCounter", null, panel, null, insertAt)
+        tabbedPane.setTabComponentAt(insertAt, TabLabel("Claude $tabCounter"))
         tabbedPane.selectedIndex = insertAt
         addingTab = false
     }
@@ -582,6 +582,49 @@ class ClaudioTabbedPanel(
     }
 
     override fun dispose() {}
+
+    /** Tab label with inline rename on double-click. */
+    private inner class TabLabel(name: String) : JPanel(FlowLayout(FlowLayout.LEFT, 2, 0)) {
+        private val label = JLabel(name)
+
+        init {
+            isOpaque = false
+            add(label)
+            label.addMouseListener(object : MouseAdapter() {
+                override fun mouseClicked(e: MouseEvent) {
+                    if (e.clickCount == 2) startEdit()
+                }
+            })
+        }
+
+        private fun startEdit() {
+            val idx = tabbedPane.indexOfTabComponent(this)
+            if (idx < 0) return
+            val field = JTextField(label.text, 10)
+            var committed = false
+            fun commit() {
+                if (committed) return
+                committed = true
+                val name = field.text.trim().ifEmpty { label.text }
+                label.text = name
+                tabbedPane.setTitleAt(idx, name)
+                remove(field)
+                add(label)
+                revalidate()
+                repaint()
+            }
+            remove(label)
+            add(field)
+            revalidate()
+            repaint()
+            field.selectAll()
+            field.requestFocusInWindow()
+            field.addActionListener { commit() }
+            field.addFocusListener(object : FocusAdapter() {
+                override fun focusLost(e: FocusEvent) { commit() }
+            })
+        }
+    }
 
     companion object {
         private const val ADD_TAB = "+"
