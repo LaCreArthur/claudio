@@ -1,44 +1,37 @@
 package com.lacrearthur.claudio
 
 import com.intellij.codeInsight.daemon.impl.HighlightInfo
-import com.intellij.codeInsight.intention.IntentionAction
-import com.intellij.codeInsight.intention.preview.IntentionPreviewInfo
 import com.intellij.lang.annotation.HighlightSeverity
+import com.intellij.openapi.actionSystem.ActionUpdateThread
+import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.impl.DocumentMarkupModel
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.Iconable
-import com.intellij.openapi.util.IconLoader
 import com.intellij.openapi.wm.ToolWindowManager
-import com.intellij.psi.PsiFile
-import javax.swing.Icon
 
 /**
- * Appears in the Alt+Enter menu when the caret is on an error.
- * Appends the error + file:line header to the Claudio input bar and opens the panel.
+ * "Ask Claudio about this error" - appears in the editor right-click menu
+ * only when the caret is on an error highlight.
  *
- * This is the moat feature: no terminal or standalone app can hook into Alt+Enter.
- * The > arrow is standard IntelliJ behavior for all intentions - click the text to invoke directly.
+ * AnAction (not IntentionAction) so there is no settings submenu.
  */
-class AskClaudeAboutErrorIntention : IntentionAction, Iconable {
+class AskClaudeAboutErrorIntention : AnAction() {
 
-    override fun getText() = "Ask Claudio about this error"
-    override fun getFamilyName() = "Claudio"
-    override fun getIcon(flags: Int): Icon = IconLoader.getIcon("/icons/claudio-icon.svg", AskClaudeAboutErrorIntention::class.java)
-    override fun startInWriteAction() = false
+    override fun getActionUpdateThread() = ActionUpdateThread.BGT
 
-    // No diff preview - we're not modifying the document
-    override fun generatePreview(project: Project, editor: Editor, file: PsiFile): IntentionPreviewInfo =
-        IntentionPreviewInfo.EMPTY
-
-    override fun isAvailable(project: Project, editor: Editor?, file: PsiFile?): Boolean {
-        editor ?: return false
-        return errorAtCaret(editor, project) != null
+    override fun update(e: AnActionEvent) {
+        val editor = e.getData(CommonDataKeys.EDITOR)
+        val project = e.project
+        e.presentation.isEnabledAndVisible =
+            editor != null && project != null && errorAtCaret(editor, project) != null
     }
 
-    override fun invoke(project: Project, editor: Editor?, file: PsiFile?) {
-        editor ?: return
-        file ?: return
+    override fun actionPerformed(e: AnActionEvent) {
+        val editor = e.getData(CommonDataKeys.EDITOR) ?: return
+        val project = e.project ?: return
+        val file = e.getData(CommonDataKeys.PSI_FILE) ?: return
         val (offset, description) = errorAtCaret(editor, project) ?: return
         val line = editor.document.getLineNumber(offset) + 1
         val text = "Error in ${file.name}:$line\n$description\n\n"

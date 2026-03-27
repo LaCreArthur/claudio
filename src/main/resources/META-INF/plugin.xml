@@ -37,12 +37,6 @@
             serviceInterface="com.lacrearthur.claudio.test.ClaudioTestService"
             serviceImplementation="com.lacrearthur.claudio.test.ClaudioTestServiceImpl"/>
 
-        <intentionAction>
-            <language/>
-            <className>com.lacrearthur.claudio.AskClaudeAboutErrorIntention</className>
-            <category>Claudio</category>
-        </intentionAction>
-
         <consoleFilterProvider implementation="com.lacrearthur.claudio.ClaudeFileFilterProvider"/>
         <toolWindow id="Claude"
                     anchor="right"
@@ -54,6 +48,14 @@
     </extensions>
 
     <actions>
+        <action id="Claudio.AskAboutError"
+                class="com.lacrearthur.claudio.AskClaudeAboutErrorIntention"
+                text="Ask Claudio about this error"
+                description="Send the error at the caret to the Claudio input bar"
+                icon="/icons/claudio-mark.svg">
+            <add-to-group group-id="EditorPopupMenu" anchor="first"/>
+        </action>
+
         <action id="ClaudeCodeGUI.SendSelectionAction"
                 class="com.lacrearthur.claudio.SendSelectionAction"
                 text="Send to Claude"
