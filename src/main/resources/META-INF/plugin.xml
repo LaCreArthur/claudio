@@ -40,7 +40,7 @@
         <intentionAction>
             <language/>
             <className>com.lacrearthur.claudio.AskClaudeAboutErrorIntention</className>
-            <category>Claude</category>
+            <category>Claudio</category>
         </intentionAction>
 
         <consoleFilterProvider implementation="com.lacrearthur.claudio.ClaudeFileFilterProvider"/>

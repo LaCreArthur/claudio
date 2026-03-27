@@ -7,19 +7,24 @@ import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.impl.DocumentMarkupModel
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Iconable
+import com.intellij.openapi.util.IconLoader
 import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.psi.PsiFile
+import javax.swing.Icon
 
 /**
  * Appears in the Alt+Enter menu when the caret is on an error.
- * Appends the error + file:line header to the Claude input bar and opens the panel.
+ * Appends the error + file:line header to the Claudio input bar and opens the panel.
  *
  * This is the moat feature: no terminal or standalone app can hook into Alt+Enter.
+ * The > arrow is standard IntelliJ behavior for all intentions - click the text to invoke directly.
  */
-class AskClaudeAboutErrorIntention : IntentionAction {
+class AskClaudeAboutErrorIntention : IntentionAction, Iconable {
 
-    override fun getText() = "Ask Claude about this error"
-    override fun getFamilyName() = "Claude"
+    override fun getText() = "Ask Claudio about this error"
+    override fun getFamilyName() = "Claudio"
+    override fun getIcon(flags: Int): Icon = IconLoader.getIcon("/icons/claudio-icon.svg", AskClaudeAboutErrorIntention::class.java)
     override fun startInWriteAction() = false
 
     // No diff preview - we're not modifying the document
