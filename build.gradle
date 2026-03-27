@@ -182,13 +182,23 @@ dependencies {
 }
 
 tasks.register('integrationTest', Test) {
-    description = 'Runs integration tests against a real IDE instance'
+    description = 'Tier 0: synthetic tests against a real IDE instance (no Claude CLI required)'
     group       = 'verification'
     testClassesDirs = sourceSets.integrationTest.output.classesDirs
     classpath       = sourceSets.integrationTest.runtimeClasspath
-    useJUnitPlatform()
+    useJUnitPlatform {
+        excludeTags 'realE2E'
+    }
     systemProperty 'idea.test.artifacts.dir', "${buildDir}/test-artifacts"
-    // Starter downloads and caches the IDE itself. Do not glob Gradle caches or pass custom
-    // claudio.test.ide.dir - that path leads to the ExistingIdeInstaller / symlink hack
-    // which breaks macOS code signing and is outside the supported contract.
+}
+
+tasks.register('realE2ETest', Test) {
+    description = 'Tier 1: real Claude CLI smoke test (requires claude CLI + auth). Run before release or on big refactors.'
+    group       = 'verification'
+    testClassesDirs = sourceSets.integrationTest.output.classesDirs
+    classpath       = sourceSets.integrationTest.runtimeClasspath
+    useJUnitPlatform {
+        includeTags 'realE2E'
+    }
+    systemProperty 'idea.test.artifacts.dir', "${buildDir}/test-artifacts"
 }
