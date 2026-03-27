@@ -16,14 +16,16 @@
 
         <h2>Features</h2>
         <ul>
-            <li>Interactive Claude Code session in a side panel</li>
-            <li>Native Allow/Deny permission dialogs - no raw CLI prompts</li>
-            <li>Clickable file paths - diffs jump to the first modified line</li>
-            <li>Send editor selection to Claude (Cmd+Alt+K)</li>
-            <li><strong>Alt+Enter on any error</strong> - "Ask Claude about this error" injects it directly into the prompt</li>
-            <li><strong>@file autocomplete</strong> in the input bar - type @ to browse and insert project files</li>
-            <li>Prompt history, permission mode badge (⚡), slash command autocomplete</li>
-            <li>Multi-line input (Cmd+Enter), Enter to send</li>
+            <li><strong>Interactive session</strong> - full Claude Code terminal in a side panel</li>
+            <li><strong>Native permission dialogs</strong> - Allow / Deny prompts as proper IDE dialogs, not raw CLI text</li>
+            <li><strong>Clickable file paths</strong> - every path in Claude's output is a hyperlink; diffs jump to the first modified line</li>
+            <li><strong>Send Selection</strong> (Cmd+Alt+K) - send selected editor code straight to the input bar</li>
+            <li><strong>Alt+Enter on any error</strong> - "Ask Claudio about this error" injects the error + file:line into the prompt</li>
+            <li><strong>@file autocomplete</strong> - type @ in the input bar to browse and insert project files by path</li>
+            <li><strong>Prompt history</strong> - ↑↓ buttons to cycle previous prompts</li>
+            <li><strong>Permission mode badge</strong> - live ⚡ indicator; Shift+Tab cycles modes</li>
+            <li><strong>Slash command autocomplete</strong> - popup triggered by /</li>
+            <li><strong>Multi-line input</strong> - Cmd+Enter for newlines, Enter to send</li>
         </ul>
         <p>Pure Kotlin + Swing. Zero runtime dependencies. No proxy, no API key.</p>
     ]]></description>

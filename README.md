@@ -20,25 +20,26 @@ Claudio adds the missing native UX on top of the existing `claude code`, with ze
 
 ## Why Claudio is different
 
-Most Claude integrations for IDEs re-implement the Claude API themselves -their own auth, their own proxy, their own model access. That means handing over credentials, trusting a third party, and hoping they stay within Anthropic's Terms of Service.
+Most Claude integrations for IDEs re-implement the Claude API themselves - their own auth, their own proxy, their own model access. That means handing over credentials, trusting a third party, and hoping they stay within Anthropic's Terms of Service.
 
-Claudio doesn't do any of that. It runs **your existing `claude code`** directly. Your auth is the CLI's auth. Your settings are the CLI's settings. This plugin never reads, stores, or touches your credentials -it literally cannot, because it never has access to them.
+Claudio doesn't do any of that. It runs **your existing `claude code`** directly. Your auth is the CLI's auth. Your settings are the CLI's settings. This plugin never reads, stores, or touches your credentials - it literally cannot, because it never has access to them.
 
-The practical upside: **everything Claude Code can do, Claudio can do** -because it *is* Claude Code, just with a better JetBrains UX on top. New CLI features land automatically. Your existing config, your CLAUDE.md files, your MCP servers -all of it just works.
+The practical upside: **everything Claude Code can do, Claudio can do** - because it *is* Claude Code, just with a better JetBrains UX on top. New CLI features land automatically. Your existing config, your CLAUDE.md files, your MCP servers - all of it just works.
 
 It's also the only way to use Claude Code with a **Max or Pro subscription** inside a JetBrains IDE that's fully ToS-compliant: no API key needed, no OAuth token extraction, no workarounds.
 
 ## Features
 
-- **Interactive session** -full Claude Code terminal in a side panel
-- **Native permission dialogs** -Allow / Deny prompts as proper IDE dialogs, not raw CLI prompts
-- **Clickable file paths** -every path in Claude's output is a hyperlink; Diffs jump to the first modified line
-- **Send Selection** (`Cmd+Alt+K`) -send selected editor code straight to Claude's input
-- **Prompt history** -↑↓ buttons to cycle previous prompts
-- **Permission mode badge** -live ⚡ indicator; `Shift+Tab` cycles modes (default → auto → bypassPermissions)
-- **Slash command autocomplete** -popup triggered by `/`
-- **Multi-line input** -`Cmd+Enter` for newlines, `Enter` to send
-- **More to come** -Early stage of development; send feedback and feature requests!
+- **Interactive session** - full Claude Code terminal in a side panel
+- **Native permission dialogs** - Allow / Deny prompts as proper IDE dialogs, not raw CLI text
+- **Clickable file paths** - every path in Claude's output is a hyperlink; diffs jump to the first modified line
+- **Send Selection** (`Cmd+Alt+K`) - send selected editor code straight to the input bar
+- **Alt+Enter on any error** - "Ask Claudio about this error" injects the error + file:line into the prompt
+- **@file autocomplete** - type `@` in the input bar to browse and insert project files by path
+- **Prompt history** - ↑↓ buttons to cycle previous prompts
+- **Permission mode badge** - live ⚡ indicator; `Shift+Tab` cycles modes
+- **Slash command autocomplete** - popup triggered by `/`
+- **Multi-line input** - `Cmd+Enter` for newlines, `Enter` to send
 
 ## Requirements
 
