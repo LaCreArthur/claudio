@@ -57,7 +57,7 @@ intellijPlatform {
 
 // Ensure plugin.xml is patched with the correct since/until build and change notes
 patchPluginXml {
-    sinceBuild = '233'
+    sinceBuild = '253'
     untilBuild = '263.*'
 
     // Dynamically load the latest changelog entry from CHANGELOG.md

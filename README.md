@@ -2,8 +2,10 @@
 
 # Claudio
 
-**Claude Code on steroids for Jetbrains IDEs.**
- 
+**Claude Code on steroids for JetBrains IDEs.**
+
+> **Early release** - actively in development. This is prototype-stage software. Expect rough edges, not a polished production plugin. Feedback, bug reports, and contributions are very welcome!
+
 Claudio adds the missing native UX on top of the existing `claude code`, with zero compromises: all features, all models, fully compliant with Anthropic's Terms of Service.
 
 [![JetBrains Marketplace](https://img.shields.io/jetbrains/plugin/v/com.lacrearthur.claudio?label=marketplace)](https://plugins.jetbrains.com/plugin/com.lacrearthur.claudio)
@@ -56,7 +58,7 @@ It's also the only way to use Claude Code with a **Max or Pro subscription** ins
 ```bash
 git clone https://github.com/LaCreArthur/claudio.git
 cd claudio
-./gradlew buildPlugin -x buildWebview
+./gradlew buildPlugin
 # Output: build/distributions/claudio-*.zip
 ```
 
