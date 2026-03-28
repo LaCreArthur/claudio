@@ -85,8 +85,47 @@ abstract class ClaudioTestBase {
             // Wait for hook server to register its port
             waitForHookServer(svc)
 
+            // Handle claude's startup: answer workspace trust prompt if it appears.
+            // Claude asks "Quick safety check: Is this a project you trust?" on new directories.
+            // Each test uses a fresh temp dir, so this fires every run.
+            // Must happen before any test block sends input to avoid the prompt consuming it.
+            handleClaudeStartup(svc)
+
             block(svc)
         }
+    }
+
+    /**
+     * Wait for claude to reach the interactive prompt after startup.
+     * Detects and answers the workspace trust prompt ("Quick safety check") if it appears.
+     * Claude uses a new temp directory each test run, so the trust prompt fires every time.
+     */
+    private fun handleClaudeStartup(svc: RemoteClaudioTestService, timeoutMs: Long = 20_000) {
+        val deadline = System.currentTimeMillis() + timeoutMs
+        var startupBannerSeen = false
+        while (System.currentTimeMillis() < deadline) {
+            val transcript = svc.getRecentTerminalTranscript()
+            if (transcript.contains("Quick safety check")) {
+                // Answer "Yes, proceed" - default selection, Enter confirms
+                svc.sendTerminalInput("\n")
+                Thread.sleep(4_000)  // Give claude time to process trust and reach input prompt
+                return
+            }
+            // Claude's startup banner (appears for both trust and trusted runs)
+            if (!startupBannerSeen && transcript.contains("─────")) {
+                startupBannerSeen = true
+                // Give claude 2s to either show the trust prompt or reach the input prompt
+                Thread.sleep(2_000)
+                val afterWait = svc.getRecentTerminalTranscript()
+                if (afterWait.contains("Quick safety check")) {
+                    svc.sendTerminalInput("\n")
+                    Thread.sleep(4_000)
+                }
+                return
+            }
+            Thread.sleep(300)
+        }
+        // Timeout - proceed; claude may already be interactive (trusted workspace)
     }
 
     /** Poll until [RemoteClaudioTestService.getHookServerPort] > 0. */
