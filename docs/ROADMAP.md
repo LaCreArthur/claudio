@@ -82,7 +82,7 @@ Remaining moat features. Things no terminal or standalone app can touch.
 
 ## Phase 6: Polish
 
-- [ ] Toolbar (new session, model selector, settings)
+- [x] Toolbar (new session, model selector, settings)
 - [x] Theme-aware styling for dialogs
 - [x] Sound/notification on task completion (window unfocused)
 - [x] Keyboard shortcuts: Escape - return to editor, Cmd+Shift+C - focus Claude

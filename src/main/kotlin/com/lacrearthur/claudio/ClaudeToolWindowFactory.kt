@@ -888,6 +888,7 @@ class ClaudioTabbedPanel(
     private val tabbedPane = JTabbedPane()
     private var tabCounter = 0
     private var addingTab = false // guards against ChangeListener re-entry (EDT only)
+    private var defaultModel = "" // model used when opening new sessions via toolbar
 
     init {
         Disposer.register(parentDisposable, this)
@@ -954,8 +955,44 @@ class ClaudioTabbedPanel(
             menu.show(src, 0, src.height)
         }
 
-        val toolbar = JPanel(FlowLayout(FlowLayout.RIGHT, 4, 2)).apply {
+        val newSessionBtn = JButton("+").apply {
+            font = MONO_11
+            toolTipText = "New session"
+            isFocusable = false
+            isContentAreaFilled = false
+            isBorderPainted = false
+            addActionListener { addTab(model = defaultModel) }
+        }
+
+        val modelNames = arrayOf("Default", "claude-opus-4-6", "claude-sonnet-4-6", "claude-haiku-4-5-20251001")
+        val modelBox = JComboBox(modelNames).apply {
+            font = MONO_11
+            toolTipText = "Model for new sessions"
+            preferredSize = Dimension(JBUI.scale(190), JBUI.scale(22))
+            isFocusable = false
+            addActionListener { defaultModel = if (selectedIndex == 0) "" else selectedItem as String }
+        }
+
+        val settingsBtn = JButton("⚙").apply {
+            font = MONO_11
+            toolTipText = "Open presets.json"
+            isFocusable = false
+            isContentAreaFilled = false
+            isBorderPainted = false
+            addActionListener {
+                val f = File(System.getProperty("user.home"), ".claudio/presets.json")
+                f.parentFile?.mkdirs()
+                if (!f.exists()) f.writeText("[]")
+                val vf = LocalFileSystem.getInstance().refreshAndFindFileByIoFile(f)
+                if (vf != null) FileEditorManager.getInstance(project).openFile(vf, true)
+            }
+        }
+
+        val toolbar = JPanel(FlowLayout(FlowLayout.LEFT, 4, 2)).apply {
+            add(newSessionBtn)
+            add(modelBox)
             add(presetBtn)
+            add(settingsBtn)
         }
 
         val centerWrapper = JPanel(BorderLayout()).apply {

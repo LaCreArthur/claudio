@@ -1,3 +1,9 @@
+##### **v0.8.5** (2026-03-28)
+
+**Polish**
+
+- Toolbar - the Claudio panel now has a toolbar strip with: + (new session), a model selector dropdown for new sessions (Default/Opus/Sonnet/Haiku), the existing ⚡ preset launcher, and ⚙ to open presets.json directly in the editor
+
 ##### **v0.8.4** (2026-03-28)
 
 **IDE-Native Power Features**
