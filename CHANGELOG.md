@@ -1,3 +1,9 @@
+##### **v0.6.9** (2026-03-28)
+
+**Deep IDE Integration**
+
+- "Fix with Claude" gutter action - a lightning bolt icon appears in the editor gutter on error and warning lines; click it to send the error to Claudio's input bar instantly
+
 ##### **v0.6.8** (2026-03-28)
 
 **Agent Presets**

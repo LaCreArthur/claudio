@@ -73,7 +73,7 @@ Turn tabs into purpose-built agents (Roo-killer). Show what they cost.
 
 Remaining moat features. Things no terminal or standalone app can touch.
 
-- [ ] Gutter action: "Fix with Claude" on error lines
+- [x] Gutter action: "Fix with Claude" on error lines
 - [ ] Checkpoint list with diff preview (visual rewind)
 - [ ] File change notifications (detect writes - show diff in editor)
 - [ ] CLAUDE.md indicator (show active files, edit from plugin)

@@ -45,6 +45,9 @@
             <category>Claudio</category>
         </intentionAction>
 
+        <codeInsight.lineMarkerProvider language=""
+            implementationClass="com.lacrearthur.claudio.FixWithClaudeMarkerProvider"/>
+
         <consoleFilterProvider implementation="com.lacrearthur.claudio.ClaudeFileFilterProvider"/>
         <toolWindow id="Claude"
                     anchor="right"
