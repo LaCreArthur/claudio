@@ -1,3 +1,9 @@
+##### **v0.8.34** (2026-03-28)
+
+**Code Archaeology**
+
+- Find Usages to Claude - place the caret on any symbol in the editor and choose "Send Usages to Claude" (right-click menu or Tools menu); Claudio runs a project-scope reference search and injects up to 50 usage sites as file:line references with line text; ideal before asking Claude to help refactor an API
+
 ##### **v0.8.33** (2026-03-28)
 
 **Code Archaeology**
