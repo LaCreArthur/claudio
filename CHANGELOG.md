@@ -1,3 +1,9 @@
+##### **v0.6.7** (2026-03-28)
+
+**Agent Presets**
+
+- Preset editor - click "Edit presets..." in the ⚡ menu to create, edit, and delete custom agent presets; custom presets are saved to `~/.claudio/presets.json`
+
 ##### **v0.6.6** (2026-03-28)
 
 **Agent Presets**

@@ -28,6 +28,7 @@ import kotlinx.coroutines.withTimeout
 import org.jetbrains.plugins.terminal.view.TerminalContentChangeEvent
 import org.jetbrains.plugins.terminal.view.TerminalOutputModelListener
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.ui.DialogWrapper
 import java.awt.*
 import java.awt.event.*
 import java.io.File
@@ -45,6 +46,222 @@ private val DEFAULT_PRESETS = listOf(
     ClaudePreset("Review Agent", "You are a code reviewer. Analyze code for bugs, security issues, performance problems, and style. Give specific, actionable feedback."),
     ClaudePreset("Test Agent", "You are a testing specialist. Write unit tests, integration tests, and suggest edge cases. Prefer practical coverage over 100% coverage."),
 )
+
+private object PresetStore {
+    private val file = File(System.getProperty("user.home"), ".claudio/presets.json")
+
+    fun load(): List<ClaudePreset> {
+        if (!file.exists()) return emptyList()
+        return try {
+            val text = file.readText().trim()
+            if (text.isEmpty() || text == "[]") return emptyList()
+            // Parse: [{"name":"...","systemPrompt":"..."},...]
+            val results = mutableListOf<ClaudePreset>()
+            var remaining = text.trimStart('[').trimEnd(']').trim()
+            while (remaining.isNotEmpty()) {
+                val objEnd = findObjectEnd(remaining)
+                if (objEnd < 0) break
+                val obj = remaining.substring(0, objEnd + 1)
+                remaining = remaining.substring(objEnd + 1).trimStart(',', ' ', '\n', '\r', '\t')
+                val name = extractJsonString(obj, "name") ?: continue
+                val prompt = extractJsonString(obj, "systemPrompt") ?: continue
+                results.add(ClaudePreset(name, prompt))
+            }
+            results
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    fun save(presets: List<ClaudePreset>) {
+        file.parentFile.mkdirs()
+        val sb = StringBuilder("[")
+        presets.forEachIndexed { i, p ->
+            if (i > 0) sb.append(",")
+            sb.append("{\"name\":\"${escapeJson(p.name)}\",\"systemPrompt\":\"${escapeJson(p.systemPrompt)}\"}")
+        }
+        sb.append("]")
+        file.writeText(sb.toString())
+    }
+
+    private fun escapeJson(s: String) = s.replace("\\", "\\\\").replace("\"", "\\\"")
+        .replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t")
+
+    private fun findObjectEnd(s: String): Int {
+        var depth = 0
+        var inStr = false
+        var escape = false
+        for (i in s.indices) {
+            val c = s[i]
+            if (escape) { escape = false; continue }
+            if (c == '\\' && inStr) { escape = true; continue }
+            if (c == '"') { inStr = !inStr; continue }
+            if (inStr) continue
+            if (c == '{') depth++
+            if (c == '}') { depth--; if (depth == 0) return i }
+        }
+        return -1
+    }
+
+    private fun extractJsonString(obj: String, key: String): String? {
+        val marker = "\"$key\":"
+        val idx = obj.indexOf(marker)
+        if (idx < 0) return null
+        var i = idx + marker.length
+        while (i < obj.length && obj[i] != '"') i++
+        if (i >= obj.length) return null
+        i++ // skip opening quote
+        val sb = StringBuilder()
+        while (i < obj.length && obj[i] != '"') {
+            if (obj[i] == '\\' && i + 1 < obj.length) {
+                when (obj[i + 1]) {
+                    '"' -> sb.append('"')
+                    '\\' -> sb.append('\\')
+                    'n' -> sb.append('\n')
+                    'r' -> sb.append('\r')
+                    't' -> sb.append('\t')
+                    else -> sb.append(obj[i + 1])
+                }
+                i += 2
+            } else {
+                sb.append(obj[i])
+                i++
+            }
+        }
+        return sb.toString()
+    }
+}
+
+private class PresetEditorDialog(
+    project: com.intellij.openapi.project.Project,
+    private val customPresets: MutableList<ClaudePreset>,
+) : DialogWrapper(project, true) {
+
+    private val listModel = DefaultListModel<String>()
+    private val presetList = JList(listModel)
+    private val nameField = JTextField()
+    private val promptArea = JTextArea(8, 40).apply {
+        lineWrap = true
+        wrapStyleWord = true
+        font = Font("JetBrains Mono", Font.PLAIN, 12)
+    }
+    private val addBtn = JButton("Add")
+    private val editBtn = JButton("Save")
+    private val deleteBtn = JButton("Delete")
+
+    // Index into the unified list: 0..DEFAULT_PRESETS.lastIndex are built-ins
+    private val allPresets: List<ClaudePreset> get() = DEFAULT_PRESETS + customPresets
+    private var selectedIndex = -1
+
+    init {
+        title = "Edit Presets"
+        init()
+        rebuildList()
+        presetList.addListSelectionListener {
+            if (!it.valueIsAdjusting) onSelectionChanged()
+        }
+        editBtn.isEnabled = false
+        deleteBtn.isEnabled = false
+        addBtn.addActionListener { onAdd() }
+        editBtn.addActionListener { onSave() }
+        deleteBtn.addActionListener { onDelete() }
+    }
+
+    override fun createCenterPanel(): JComponent {
+        val leftPanel = JPanel(BorderLayout()).apply {
+            preferredSize = Dimension(180, 0)
+            add(JScrollPane(presetList), BorderLayout.CENTER)
+            val btnPanel = JPanel(FlowLayout(FlowLayout.LEFT, 2, 2)).apply {
+                add(addBtn)
+                add(editBtn)
+                add(deleteBtn)
+            }
+            add(btnPanel, BorderLayout.SOUTH)
+        }
+
+        val rightPanel = JPanel(BorderLayout(0, 4)).apply {
+            border = BorderFactory.createEmptyBorder(0, 8, 0, 0)
+            val namePanel = JPanel(BorderLayout(4, 0)).apply {
+                add(JLabel("Name:"), BorderLayout.WEST)
+                add(nameField, BorderLayout.CENTER)
+            }
+            add(namePanel, BorderLayout.NORTH)
+            add(JLabel("System prompt:"), BorderLayout.CENTER)
+            add(JScrollPane(promptArea), BorderLayout.SOUTH)
+        }
+
+        val split = JPanel(BorderLayout(8, 0))
+        split.border = BorderFactory.createEmptyBorder(8, 8, 8, 8)
+        split.add(leftPanel, BorderLayout.WEST)
+        split.add(rightPanel, BorderLayout.CENTER)
+        return split
+    }
+
+    private fun rebuildList() {
+        listModel.clear()
+        for (p in DEFAULT_PRESETS) listModel.addElement("${p.name} (built-in)")
+        for (p in customPresets) listModel.addElement(p.name)
+    }
+
+    private fun onSelectionChanged() {
+        selectedIndex = presetList.selectedIndex
+        if (selectedIndex < 0) {
+            nameField.text = ""
+            promptArea.text = ""
+            nameField.isEditable = false
+            promptArea.isEditable = false
+            editBtn.isEnabled = false
+            deleteBtn.isEnabled = false
+            return
+        }
+        val preset = allPresets[selectedIndex]
+        nameField.text = preset.name
+        promptArea.text = preset.systemPrompt
+        val isBuiltIn = selectedIndex < DEFAULT_PRESETS.size
+        nameField.isEditable = !isBuiltIn
+        promptArea.isEditable = !isBuiltIn
+        editBtn.isEnabled = !isBuiltIn
+        deleteBtn.isEnabled = !isBuiltIn
+    }
+
+    private fun onAdd() {
+        val name = "New Preset ${customPresets.size + 1}"
+        customPresets.add(ClaudePreset(name, ""))
+        rebuildList()
+        val newIdx = DEFAULT_PRESETS.size + customPresets.size - 1
+        presetList.selectedIndex = newIdx
+        nameField.requestFocusInWindow()
+        nameField.selectAll()
+    }
+
+    private fun onSave() {
+        val idx = selectedIndex
+        if (idx < DEFAULT_PRESETS.size) return
+        val customIdx = idx - DEFAULT_PRESETS.size
+        val newName = nameField.text.trim().ifEmpty { customPresets[customIdx].name }
+        val newPrompt = promptArea.text
+        customPresets[customIdx] = ClaudePreset(newName, newPrompt)
+        rebuildList()
+        presetList.selectedIndex = idx
+    }
+
+    private fun onDelete() {
+        val idx = selectedIndex
+        if (idx < DEFAULT_PRESETS.size) return
+        val customIdx = idx - DEFAULT_PRESETS.size
+        customPresets.removeAt(customIdx)
+        rebuildList()
+        val newSel = minOf(idx, listModel.size - 1)
+        if (newSel >= 0) presetList.selectedIndex = newSel
+    }
+
+    override fun doOKAction() {
+        // Auto-save any pending edit
+        if (selectedIndex >= DEFAULT_PRESETS.size) onSave()
+        PresetStore.save(customPresets)
+        super.doOKAction()
+    }
+}
 
 class ClaudeToolWindowFactory : ToolWindowFactory, DumbAware {
     override suspend fun isApplicableAsync(project: Project): Boolean = true
@@ -583,13 +800,13 @@ class ClaudioTabbedPanel(
             isFocusable = false
         }
         presetBtn.addActionListener { e ->
+            val customPresets = PresetStore.load().toMutableList()
             val menu = JPopupMenu()
-            for (preset in DEFAULT_PRESETS) {
+            for (preset in DEFAULT_PRESETS + customPresets) {
                 menu.add(JMenuItem(preset.name).apply {
                     font = MONO_11
                     addActionListener {
                         addTab()
-                        // The newly created tab is now selected; rename it and pre-fill input.
                         val newIdx = tabbedPane.selectedIndex
                         if (newIdx >= 0) {
                             tabbedPane.setTitleAt(newIdx, preset.name)
@@ -599,6 +816,15 @@ class ClaudioTabbedPanel(
                     }
                 })
             }
+            menu.addSeparator()
+            menu.add(JMenuItem("Edit presets...").apply {
+                font = MONO_11
+                addActionListener {
+                    val mutable = PresetStore.load().toMutableList()
+                    val dialog = PresetEditorDialog(project, mutable)
+                    dialog.show()
+                }
+            })
             val src = e.source as JComponent
             menu.show(src, 0, src.height)
         }
