@@ -59,12 +59,12 @@ Turn tabs into purpose-built agents (Roo-killer). Show what they cost.
 
 - [ ] Agent presets (named configs: system prompt, permission mode, working directory, model)
 - [ ] One-click launch: "Backend Agent", "Review Agent", "Test Agent"
-- [ ] Sticky model per preset (Architect uses reasoning model, Code uses fast one)
+- [x] Sticky model per preset (Architect uses reasoning model, Code uses fast one)
 
 ### Agent presets - sub-items
 - [x] Launch from preset: `ClaudePreset(name, systemPrompt)` data model + 3 built-in defaults (Backend/Review/Test) + "⚡ Preset" dropdown button + fills input bar and renames tab on open
 - [x] Preset editor: create/edit/delete custom presets, persist to `~/.claudio/presets.json`
-- [ ] Sticky model: pass `--model <model>` to the claude process at tab launch time
+- [x] Sticky model: pass `--model <model>` to the claude process at tab launch time
 - [ ] Token/cost display per session (parse CLI output)
 - [ ] Live cost ticker in status bar while generating
 - [ ] Per-project cost tracking over time

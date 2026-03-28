@@ -1,3 +1,9 @@
+##### **v0.6.8** (2026-03-28)
+
+**Agent Presets**
+
+- Sticky model per preset - assign a Claude model (Opus, Sonnet, Haiku, or Default) to any custom preset; the model is passed as `--model` when launching the session
+
 ##### **v0.6.7** (2026-03-28)
 
 **Agent Presets**

@@ -39,7 +39,7 @@ private val MONO_11 = Font("JetBrains Mono", Font.PLAIN, 11)
 
 private data class SessionEntry(val preview: String, val timestamp: String, val sessionId: String)
 
-private data class ClaudePreset(val name: String, val systemPrompt: String)
+private data class ClaudePreset(val name: String, val systemPrompt: String, val model: String = "")
 
 private val DEFAULT_PRESETS = listOf(
     ClaudePreset("Backend Agent", "You are a backend engineering specialist. Focus on server-side code, APIs, databases, and performance. Be direct and concise."),
@@ -65,7 +65,8 @@ private object PresetStore {
                 remaining = remaining.substring(objEnd + 1).trimStart(',', ' ', '\n', '\r', '\t')
                 val name = extractJsonString(obj, "name") ?: continue
                 val prompt = extractJsonString(obj, "systemPrompt") ?: continue
-                results.add(ClaudePreset(name, prompt))
+                val model = extractJsonString(obj, "model") ?: ""
+                results.add(ClaudePreset(name, prompt, model))
             }
             results
         } catch (_: Exception) {
@@ -78,7 +79,7 @@ private object PresetStore {
         val sb = StringBuilder("[")
         presets.forEachIndexed { i, p ->
             if (i > 0) sb.append(",")
-            sb.append("{\"name\":\"${escapeJson(p.name)}\",\"systemPrompt\":\"${escapeJson(p.systemPrompt)}\"}")
+            sb.append("{\"name\":\"${escapeJson(p.name)}\",\"systemPrompt\":\"${escapeJson(p.systemPrompt)}\",\"model\":\"${escapeJson(p.model)}\"}")
         }
         sb.append("]")
         file.writeText(sb.toString())
@@ -145,6 +146,17 @@ private class PresetEditorDialog(
         wrapStyleWord = true
         font = Font("JetBrains Mono", Font.PLAIN, 12)
     }
+    private val modelOptions = arrayOf("", "claude-opus-4-6", "claude-sonnet-4-6", "claude-haiku-4-5-20251001")
+    private val modelCombo = JComboBox(modelOptions).apply {
+        font = Font("JetBrains Mono", Font.PLAIN, 12)
+        setRenderer(object : DefaultListCellRenderer() {
+            override fun getListCellRendererComponent(list: JList<*>, value: Any?, index: Int, isSelected: Boolean, cellHasFocus: Boolean): java.awt.Component {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus)
+                text = if (value == "") "Default" else value as String
+                return this
+            }
+        })
+    }
     private val addBtn = JButton("Add")
     private val editBtn = JButton("Save")
     private val deleteBtn = JButton("Delete")
@@ -162,6 +174,7 @@ private class PresetEditorDialog(
         }
         editBtn.isEnabled = false
         deleteBtn.isEnabled = false
+        modelCombo.isEnabled = false
         addBtn.addActionListener { onAdd() }
         editBtn.addActionListener { onSave() }
         deleteBtn.addActionListener { onDelete() }
@@ -181,11 +194,21 @@ private class PresetEditorDialog(
 
         val rightPanel = JPanel(BorderLayout(0, 4)).apply {
             border = BorderFactory.createEmptyBorder(0, 8, 0, 0)
-            val namePanel = JPanel(BorderLayout(4, 0)).apply {
-                add(JLabel("Name:"), BorderLayout.WEST)
-                add(nameField, BorderLayout.CENTER)
+            val topFields = JPanel().apply {
+                layout = BoxLayout(this, BoxLayout.Y_AXIS)
+                val namePanel = JPanel(BorderLayout(4, 0)).apply {
+                    add(JLabel("Name:"), BorderLayout.WEST)
+                    add(nameField, BorderLayout.CENTER)
+                }
+                add(namePanel)
+                add(Box.createVerticalStrut(4))
+                val modelPanel = JPanel(BorderLayout(4, 0)).apply {
+                    add(JLabel("Model:"), BorderLayout.WEST)
+                    add(modelCombo, BorderLayout.CENTER)
+                }
+                add(modelPanel)
             }
-            add(namePanel, BorderLayout.NORTH)
+            add(topFields, BorderLayout.NORTH)
             add(JLabel("System prompt:"), BorderLayout.CENTER)
             add(JScrollPane(promptArea), BorderLayout.SOUTH)
         }
@@ -210,6 +233,8 @@ private class PresetEditorDialog(
             promptArea.text = ""
             nameField.isEditable = false
             promptArea.isEditable = false
+            modelCombo.selectedItem = ""
+            modelCombo.isEnabled = false
             editBtn.isEnabled = false
             deleteBtn.isEnabled = false
             return
@@ -217,16 +242,18 @@ private class PresetEditorDialog(
         val preset = allPresets[selectedIndex]
         nameField.text = preset.name
         promptArea.text = preset.systemPrompt
+        modelCombo.selectedItem = preset.model
         val isBuiltIn = selectedIndex < DEFAULT_PRESETS.size
         nameField.isEditable = !isBuiltIn
         promptArea.isEditable = !isBuiltIn
+        modelCombo.isEnabled = !isBuiltIn
         editBtn.isEnabled = !isBuiltIn
         deleteBtn.isEnabled = !isBuiltIn
     }
 
     private fun onAdd() {
         val name = "New Preset ${customPresets.size + 1}"
-        customPresets.add(ClaudePreset(name, ""))
+        customPresets.add(ClaudePreset(name, "", ""))
         rebuildList()
         val newIdx = DEFAULT_PRESETS.size + customPresets.size - 1
         presetList.selectedIndex = newIdx
@@ -240,7 +267,8 @@ private class PresetEditorDialog(
         val customIdx = idx - DEFAULT_PRESETS.size
         val newName = nameField.text.trim().ifEmpty { customPresets[customIdx].name }
         val newPrompt = promptArea.text
-        customPresets[customIdx] = ClaudePreset(newName, newPrompt)
+        val newModel = (modelCombo.selectedItem as? String) ?: ""
+        customPresets[customIdx] = ClaudePreset(newName, newPrompt, newModel)
         rebuildList()
         presetList.selectedIndex = idx
     }
@@ -305,6 +333,7 @@ private fun buildErrorPanel(message: String): JPanel {
 class ClaudePanel(
     private val project: Project,
     parentDisposable: Disposable,
+    private val model: String = "",
 ) : JPanel(BorderLayout()), Disposable {
 
     private var terminalView: TerminalView? = null
@@ -437,10 +466,11 @@ class ClaudePanel(
                 view.sessionState.first { it is TerminalViewSessionState.Running }
                 log.warn("[CLAUDE] terminal Running - sending 'claude'")
                 updateStatusText("Launching Claude...")
+                val modelFlag = if (model.isNotEmpty()) " --model $model" else ""
                 val launchCmd = if (hookServer.port > 0)
-                    "CLAUDIO_HOOK_PORT=${hookServer.port} claude"
+                    "CLAUDIO_HOOK_PORT=${hookServer.port} claude$modelFlag"
                 else
-                    "claude"
+                    "claude$modelFlag"
                 view.createSendTextBuilder().shouldExecute().send(launchCmd)
                 log.warn("[CLAUDE] 'claude' sent")
 
@@ -806,7 +836,7 @@ class ClaudioTabbedPanel(
                 menu.add(JMenuItem(preset.name).apply {
                     font = MONO_11
                     addActionListener {
-                        addTab()
+                        addTab(model = preset.model)
                         val newIdx = tabbedPane.selectedIndex
                         if (newIdx >= 0) {
                             tabbedPane.setTitleAt(newIdx, preset.name)
@@ -840,10 +870,10 @@ class ClaudioTabbedPanel(
         add(centerWrapper, BorderLayout.CENTER)
     }
 
-    private fun addTab() {
+    private fun addTab(model: String = "") {
         addingTab = true
         tabCounter++
-        val panel = ClaudePanel(project, this)
+        val panel = ClaudePanel(project, this, model)
         val insertAt = if (tabbedPane.tabCount > 0 && tabbedPane.getTitleAt(tabbedPane.tabCount - 1) == ADD_TAB)
             tabbedPane.tabCount - 1
         else
