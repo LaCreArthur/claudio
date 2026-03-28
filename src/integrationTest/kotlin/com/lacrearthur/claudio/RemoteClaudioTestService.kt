@@ -21,5 +21,6 @@ interface RemoteClaudioTestService {
     fun getRecentTerminalTranscript(): String
     fun getLastTerminalPromptMatch(): String?
     fun sendTerminalInput(text: String)
+    fun dismissActiveDialog()
     fun clearHistory()
 }

@@ -423,6 +423,7 @@ class ClaudePanel(
 
         // Parser owns only AskUserQuestion. Permissions are owned by PermissionRequest hook.
         outputParser.onQuestion = { question ->
+            log.warn("[CLAUDE] onQuestion fired: title='${question.title}' opts=${question.options.size} thread=${Thread.currentThread().name}")
             try { project.service<ClaudioTestServiceImpl>().recordParsedQuestion(question.title) } catch (_: Exception) {}
             if (question.options.isEmpty()) showFreeTextDialog(question)
             else showAskUserDialog(question)
@@ -582,21 +583,34 @@ class ClaudePanel(
 
     private fun showAskUserDialog(question: ParsedQuestion) {
         log.warn("[CLAUDE] showAskUserDialog: title='${question.title}' options=${question.options.size}")
+        // Set dialog type immediately (before EDT) so tests can detect it
+        try { project.service<ClaudioTestServiceImpl>().setActiveDialog("askUserQuestion") } catch (_: Exception) {}
         SwingUtilities.invokeLater {
             val dialog = AskUserQuestionDialog(project, question)
-            if (dialog.showAndGet()) {
-                answerQuestion(dialog.getSelectedOptionIndex(), dialog.isFreeTextSelected(), dialog.getFreeText())
+            try { project.service<ClaudioTestServiceImpl>().setActiveDialog("askUserQuestion", dialog) } catch (_: Exception) {}
+            try {
+                if (dialog.showAndGet()) {
+                    answerQuestion(dialog.getSelectedOptionIndex(), dialog.isFreeTextSelected(), dialog.getFreeText())
+                }
+            } finally {
+                try { project.service<ClaudioTestServiceImpl>().setActiveDialog(null) } catch (_: Exception) {}
             }
         }
     }
 
     private fun showFreeTextDialog(question: ParsedQuestion) {
         log.warn("[CLAUDE] showFreeTextDialog: title='${question.title}'")
+        try { project.service<ClaudioTestServiceImpl>().setActiveDialog("askUserQuestion") } catch (_: Exception) {}
         SwingUtilities.invokeLater {
             val dialog = FreeTextQuestionDialog(project, question)
-            if (dialog.showAndGet()) {
-                val text = dialog.getText()
-                if (text.isNotEmpty()) answerFreeText(text)
+            try { project.service<ClaudioTestServiceImpl>().setActiveDialog("askUserQuestion", dialog) } catch (_: Exception) {}
+            try {
+                if (dialog.showAndGet()) {
+                    val text = dialog.getText()
+                    if (text.isNotEmpty()) answerFreeText(text)
+                }
+            } finally {
+                try { project.service<ClaudioTestServiceImpl>().setActiveDialog(null) } catch (_: Exception) {}
             }
         }
     }

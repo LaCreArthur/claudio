@@ -46,6 +46,9 @@ interface ClaudioTestService {
     /** Sends text to the real TerminalView as if typed from the input bar. */
     fun sendTerminalInput(text: String)
 
+    /** Programmatically dismiss the active dialog (OK/accept). For test use only. */
+    fun dismissActiveDialog()
+
     /** Resets all observable state to null/empty. Does NOT reset live session state. */
     fun clearHistory()
 }

@@ -4,9 +4,11 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.DialogWrapper
 import java.net.HttpURLConnection
 import java.net.URI
 import java.util.concurrent.atomic.AtomicReference
+import javax.swing.SwingUtilities
 
 private val log = Logger.getInstance("ClaudioTestService")
 
@@ -33,9 +35,15 @@ class ClaudioTestServiceImpl(private val project: Project) : ClaudioTestService 
         log.warn("[TEST] hook port registered: $port")
     }
 
+    private val activeDialogRef = AtomicReference<DialogWrapper?>(null)
+
     fun recordEvent(json: String)        { lastEvent.set(json) }
     fun recordResponse(json: String)     { lastResponse.set(json) }
-    fun setActiveDialog(type: String?)   { activeDialog.set(type) }
+    fun setActiveDialog(type: String?, dialog: DialogWrapper? = null) {
+        log.warn("[TEST] setActiveDialog: type=$type dialog=${dialog?.javaClass?.simpleName}")
+        activeDialog.set(type)
+        activeDialogRef.set(dialog)
+    }
     fun recordParsedQuestion(title: String) { lastParsedQuestion.set(title) }
 
     fun setTerminalLineInjector(callback: (String) -> Unit) { terminalLineInjector = callback }
@@ -113,6 +121,16 @@ class ClaudioTestServiceImpl(private val project: Project) : ClaudioTestService 
         val sender = terminalInputSender
         if (sender == null) log.warn("[TEST] sendTerminalInput: no sender registered yet")
         else { log.warn("[TEST] sendTerminalInput: '${text.take(80)}'"); sender(text) }
+    }
+
+    override fun dismissActiveDialog() {
+        val dialog = activeDialogRef.get()
+        if (dialog == null) {
+            log.warn("[TEST] dismissActiveDialog: no active dialog")
+            return
+        }
+        log.warn("[TEST] dismissActiveDialog: closing ${activeDialog.get()}")
+        SwingUtilities.invokeLater { dialog.close(DialogWrapper.OK_EXIT_CODE) }
     }
 
     override fun clearHistory() {

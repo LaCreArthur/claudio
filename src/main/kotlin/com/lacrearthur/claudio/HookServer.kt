@@ -194,7 +194,7 @@ class HookServer(
                     detail = formatDetail(tool, toolInput),
                 )
                 val dialog = PermissionDialog(project, request)
-                try { project.service<ClaudioTestServiceImpl>().setActiveDialog("permission") } catch (_: Exception) {}
+                try { project.service<ClaudioTestServiceImpl>().setActiveDialog("permission", dialog) } catch (_: Exception) {}
                 if (dialog.showAndGet()) {
                     val remember = dialog.isRememberChecked()
                     response = when (dialog.getChoice()) {
