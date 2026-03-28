@@ -122,6 +122,14 @@
             <add-to-group group-id="ToolsMenu" anchor="last"/>
         </action>
 
+        <action id="com.lacrearthur.claudio.SendHierarchyAction"
+                class="com.lacrearthur.claudio.SendHierarchyAction"
+                text="Send Hierarchy to Claude"
+                description="Find all classes and interfaces that extend or implement the type at caret and inject up to 30 inheritors as file:line references into the Claudio input bar">
+            <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="com.lacrearthur.claudio.SendUsagesAction"/>
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
+
         <action id="com.lacrearthur.claudio.SendCurrentFileAction"
                 class="com.lacrearthur.claudio.SendCurrentFileAction"
                 text="Send Current File to Claude"

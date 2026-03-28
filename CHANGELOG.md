@@ -1,3 +1,9 @@
+##### **v0.8.35** (2026-03-28)
+
+**Code Archaeology**
+
+- Class hierarchy to Claude - place caret on any class or interface and choose "Send Hierarchy to Claude"; injects all implementors and subclasses (up to 30) as a file:line list so Claude knows the full inheritance tree before suggesting interface changes
+
 ##### **v0.8.34** (2026-03-28)
 
 **Code Archaeology**
