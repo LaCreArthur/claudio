@@ -992,15 +992,35 @@ class ClaudioTabbedPanel(
     /** Tab label with inline rename on double-click. */
     private inner class TabLabel(name: String) : JPanel(FlowLayout(FlowLayout.LEFT, 2, 0)) {
         private val label = JLabel(name)
+        private val closeBtn = JButton("×").apply {
+            font = MONO_11
+            isFocusable = false
+            isContentAreaFilled = false
+            isBorderPainted = false
+            toolTipText = "Close tab"
+            preferredSize = Dimension(16, 16)
+            addActionListener { closeThisTab() }
+        }
 
         init {
             isOpaque = false
             add(label)
+            add(closeBtn)
             label.addMouseListener(object : MouseAdapter() {
                 override fun mouseClicked(e: MouseEvent) {
                     if (e.clickCount == 2) startEdit()
                 }
             })
+        }
+
+        private fun closeThisTab() {
+            val realTabCount = tabbedPane.tabCount - 1  // subtract the "+" tab
+            if (realTabCount <= 1) return
+            val idx = tabbedPane.indexOfTabComponent(this)
+            if (idx < 0) return
+            val panel = tabbedPane.getComponentAt(idx) as? ClaudePanel ?: return
+            Disposer.dispose(panel)
+            tabbedPane.removeTabAt(idx)
         }
 
         fun rename(newName: String) {

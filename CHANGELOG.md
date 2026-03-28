@@ -1,3 +1,9 @@
+##### **v0.8.0** (2026-03-28)
+
+**IDE-Native Power Features**
+
+- Tab close button - each tab now has a × button; clicking it disposes the Claude session and removes the tab; the last tab cannot be closed
+
 ##### **v0.7.9** (2026-03-28)
 
 **Polish**
