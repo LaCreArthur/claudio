@@ -1,3 +1,9 @@
+##### **v0.8.38** (2026-03-28)
+
+**Living Context**
+
+- Call hierarchy to Claude - place caret on any function or method and choose "Send Call Hierarchy to Claude"; injects all call sites (up to 50) with file:line and line text so Claude knows exactly what will break before you change the signature
+
 ##### **v0.8.37** (2026-03-28)
 
 **Living Context**

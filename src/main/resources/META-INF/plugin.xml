@@ -133,6 +133,14 @@
             <add-to-group group-id="ToolsMenu" anchor="last"/>
         </action>
 
+        <action id="com.lacrearthur.claudio.SendCallHierarchyAction"
+                class="com.lacrearthur.claudio.SendCallHierarchyAction"
+                text="Send Call Hierarchy to Claude"
+                description="Find all callers of the function or method at caret and inject up to 50 call sites as file:line references into the Claudio input bar">
+            <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="com.lacrearthur.claudio.SendHierarchyAction"/>
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
+
         <action id="com.lacrearthur.claudio.SendCurrentFileAction"
                 class="com.lacrearthur.claudio.SendCurrentFileAction"
                 text="Send Current File to Claude"
