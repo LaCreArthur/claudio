@@ -1,3 +1,9 @@
+##### **v0.7.4** (2026-03-28)
+
+**Polish**
+
+- Keyboard shortcut: Cmd+Shift+C (macOS) / Ctrl+Shift+C (Windows/Linux) activates and focuses the Claudio tool window from anywhere in the IDE; also available via Tools menu
+
 ##### **v0.7.3** (2026-03-28)
 
 **Deep IDE Integration**

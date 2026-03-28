@@ -59,6 +59,16 @@
     </extensions>
 
     <actions>
+        <action id="com.lacrearthur.claudio.FocusClaudia"
+                class="com.lacrearthur.claudio.FocusClaudiaAction"
+                text="Focus Claude (Claudio)"
+                description="Activate and focus the Claudio tool window">
+            <keyboard-shortcut keymap="$default" first-keystroke="ctrl shift C"/>
+            <keyboard-shortcut keymap="Mac OS X" first-keystroke="meta shift C"/>
+            <keyboard-shortcut keymap="macOS" first-keystroke="meta shift C"/>
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
+
         <action id="ClaudeCodeGUI.SendSelectionAction"
                 class="com.lacrearthur.claudio.SendSelectionAction"
                 text="Send to Claude"
