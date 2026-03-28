@@ -1,3 +1,9 @@
+##### **v0.6.4** (2026-03-28)
+
+**Multi-Session**
+
+- Session history sidebar - 220px west panel inside the Claudio tool window showing past Claude Code sessions from `~/.claude/projects/`; each entry shows timestamp and first user message preview
+
 ##### **v0.6.3** (2026-03-28)
 
 **Multi-Session**

@@ -50,7 +50,7 @@ Pull the moat features forward. `@file` and error injection are what make this b
 - [x] Inject build errors / lint warnings / test failures as context (build button in input bar)
 - [x] Multi-tab chat (each tab = independent claude instance)
 - [x] Tab naming (double-click to rename inline)
-- [ ] Session history sidebar (read ~/.claude/ history, show with timestamps + preview)
+- [x] Session history sidebar (read ~/.claude/ history, show with timestamps + preview)
 - [ ] Resume previous sessions from history
 
 ## Phase 4: Agent Presets + Usage Analytics

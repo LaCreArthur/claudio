@@ -27,12 +27,16 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import org.jetbrains.plugins.terminal.view.TerminalContentChangeEvent
 import org.jetbrains.plugins.terminal.view.TerminalOutputModelListener
+import com.intellij.openapi.application.ApplicationManager
 import java.awt.*
 import java.awt.event.*
+import java.io.File
 import javax.swing.*
 
 private val log = Logger.getInstance("Claudio")
 private val MONO_11 = Font("JetBrains Mono", Font.PLAIN, 11)
+
+private data class SessionEntry(val preview: String, val timestamp: String)
 
 class ClaudeToolWindowFactory : ToolWindowFactory, DumbAware {
     override suspend fun isApplicableAsync(project: Project): Boolean = true
@@ -551,6 +555,7 @@ class ClaudioTabbedPanel(
 
     init {
         Disposer.register(parentDisposable, this)
+        add(SessionHistoryPanel(), BorderLayout.WEST)
         addTab()
         tabbedPane.addTab(ADD_TAB, JPanel())
         tabbedPane.addChangeListener {
@@ -623,6 +628,83 @@ class ClaudioTabbedPanel(
             field.addFocusListener(object : FocusAdapter() {
                 override fun focusLost(e: FocusEvent) { commit() }
             })
+        }
+    }
+
+    /** Read-only sidebar listing recent Claude Code sessions from ~/.claude/projects/. */
+    private inner class SessionHistoryPanel : JPanel(BorderLayout()) {
+        private val listModel = DefaultListModel<SessionEntry>()
+        private val sessionList = JList(listModel)
+
+        init {
+            preferredSize = Dimension(220, 0)
+            border = BorderFactory.createMatteBorder(0, 0, 0, 1, UIManager.getColor("Separator.foreground"))
+
+            val header = JLabel("  History")
+            header.font = MONO_11
+            header.border = BorderFactory.createEmptyBorder(4, 0, 4, 0)
+
+            sessionList.font = MONO_11
+            sessionList.cellRenderer = object : DefaultListCellRenderer() {
+                override fun getListCellRendererComponent(
+                    list: JList<*>, value: Any?, index: Int, isSelected: Boolean, cellHasFocus: Boolean,
+                ): Component {
+                    val entry = value as SessionEntry
+                    val comp = super.getListCellRendererComponent(
+                        list, "${entry.timestamp}  ${entry.preview}", index, isSelected, cellHasFocus,
+                    )
+                    (comp as JLabel).font = MONO_11
+                    return comp
+                }
+            }
+
+            add(header, BorderLayout.NORTH)
+            add(JScrollPane(sessionList), BorderLayout.CENTER)
+
+            ApplicationManager.getApplication().executeOnPooledThread { loadSessions() }
+        }
+
+        private fun loadSessions() {
+            val claudeDir = File(System.getProperty("user.home"), ".claude/projects")
+            if (!claudeDir.exists()) return
+            val fmt = java.text.SimpleDateFormat("MMM d HH:mm")
+            val entries = claudeDir.walkTopDown()
+                .filter { it.isFile && it.name.endsWith(".jsonl") }
+                .map { it to it.lastModified() }
+                .sortedByDescending { it.second }
+                .take(20)
+                .map { (file, mtime) ->
+                    SessionEntry(extractFirstUserMessage(file), fmt.format(java.util.Date(mtime)))
+                }
+                .toList()
+            SwingUtilities.invokeLater { listModel.clear(); entries.forEach { listModel.addElement(it) } }
+        }
+
+        private fun extractFirstUserMessage(file: File): String {
+            return try {
+                file.bufferedReader().useLines { lines ->
+                    lines.firstNotNullOfOrNull { line ->
+                        if (!line.contains("\"role\":\"user\"")) return@firstNotNullOfOrNull null
+                        // Handles both "content":"plain string" and "content":[{"text":"..."}]
+                        for (marker in listOf("\"content\":\"", "\"text\":\"")) {
+                            val idx = line.indexOf(marker)
+                            if (idx < 0) continue
+                            val start = idx + marker.length
+                            if (start < line.length && line[start] == '[') continue // array, not string
+                            val sb = StringBuilder()
+                            var i = start
+                            while (i < line.length && line[i] != '"') {
+                                if (line[i] == '\\') { i += 2; continue }
+                                sb.append(line[i])
+                                i++
+                            }
+                            val text = sb.toString().trim().take(50)
+                            if (text.isNotEmpty()) return@firstNotNullOfOrNull text
+                        }
+                        null
+                    } ?: "(no message)"
+                }
+            } catch (_: Exception) { "(unreadable)" }
         }
     }
 
