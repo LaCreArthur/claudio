@@ -1,3 +1,9 @@
+##### **v0.8.10** (2026-03-28)
+
+**Context Superpowers**
+
+- Send Current File action - press Cmd+Alt+F (macOS) / Ctrl+Alt+F (Win/Linux) anywhere in the editor to inject `@file:line` into the Claudio input bar; also available via right-click → "Send Current File to Claude"
+
 ##### **v0.8.9** (2026-03-28)
 
 **Usage Analytics**

@@ -104,7 +104,7 @@ Deep hooks into IntelliJ's execution model and code model. Things no standalone 
 
 The IDE knows things no terminal ever will: where the cursor is right now, what the debugger sees, who last touched that line. Ship the features that exploit this.
 
-- [ ] "Send Current File" action - one click/shortcut to inject `@<active-editor-file>` into input bar (evidence: ghostty-claude-intellij core feature, issue #40020; moat: uses IDE file tracking; effort: small)
+- [x] "Send Current File" action - one click/shortcut to inject `@<active-editor-file>` into input bar (evidence: ghostty-claude-intellij core feature, issue #40020; moat: uses IDE file tracking; effort: small)
 - [ ] Debugger context injection - when paused at a breakpoint, "Send to Claude" injects current stack frames + visible variables (evidence: Cursor has this, no JetBrains Claude plugin does; moat: very high - uses XDebugger API; effort: medium)
 - [ ] @symbol autocomplete (PSI) - extend `@file` completion to resolve class/method names to their file:line locations (evidence: Cursor supports, strong IDE moat; effort: medium)
 - [ ] Git blame context - "Ask Claude to Explain" automatically includes git blame for selected lines (who/when/commit) (evidence: JetBrains VCS API, extends existing PSI action; effort: small)

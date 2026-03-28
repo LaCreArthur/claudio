@@ -98,6 +98,16 @@
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
         </action>
 
+        <action id="com.lacrearthur.claudio.SendCurrentFileAction"
+                class="com.lacrearthur.claudio.SendCurrentFileAction"
+                text="Send Current File to Claude"
+                description="Inject @file:line reference for the current editor file into Claudio">
+            <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="ClaudeCodeGUI.SendSelectionAction"/>
+            <keyboard-shortcut keymap="Mac OS X" first-keystroke="meta alt F"/>
+            <keyboard-shortcut keymap="macOS" first-keystroke="meta alt F"/>
+            <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt F"/>
+        </action>
+
         <action id="com.lacrearthur.claudio.SendTodosAction"
                 class="com.lacrearthur.claudio.SendTodosAction"
                 text="Send TODOs to Claude"
