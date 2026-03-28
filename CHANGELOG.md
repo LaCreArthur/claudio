@@ -1,3 +1,9 @@
+##### **v0.7.9** (2026-03-28)
+
+**Polish**
+
+- Theme-aware styling - all colors now adapt to dark/light IDE theme using JBColor; font size respects display DPI via JBUI.scale()
+
 ##### **v0.7.8** (2026-03-28)
 
 **Polish**

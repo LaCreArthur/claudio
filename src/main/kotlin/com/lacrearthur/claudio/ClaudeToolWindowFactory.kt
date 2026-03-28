@@ -34,6 +34,8 @@ import com.intellij.notification.Notifications
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.ui.JBColor
+import com.intellij.util.ui.JBUI
 import com.intellij.openapi.fileChooser.FileChooserFactory
 import com.intellij.openapi.fileChooser.FileSaverDescriptor
 import com.intellij.openapi.fileEditor.OpenFileDescriptor
@@ -51,7 +53,7 @@ import java.nio.file.Path
 import javax.swing.*
 
 private val log = Logger.getInstance("Claudio")
-private val MONO_11 = Font("JetBrains Mono", Font.PLAIN, 11)
+private val MONO_11 = Font("JetBrains Mono", Font.PLAIN, JBUI.scale(11))
 
 private data class SessionEntry(val preview: String, val timestamp: String, val sessionId: String)
 
@@ -341,7 +343,7 @@ private fun buildErrorPanel(message: String): JPanel {
     label.isEditable = false
     label.lineWrap = true
     label.wrapStyleWord = true
-    label.foreground = Color(220, 80, 80)
+    label.foreground = JBColor(Color(220, 80, 80), Color(255, 100, 100))
     label.background = panel.background
     label.font = Font("JetBrains Mono", Font.PLAIN, 12)
     panel.add(JScrollPane(label), BorderLayout.CENTER)
@@ -824,7 +826,7 @@ class ClaudePanel(
         }
 
         statusLabel.font = Font("JetBrains Mono", Font.ITALIC, 11)
-        statusLabel.foreground = UIManager.getColor("Component.infoForeground") ?: Color.GRAY
+        statusLabel.foreground = UIManager.getColor("Component.infoForeground") ?: JBColor.GRAY
 
         val histPanel = JPanel().apply {
             layout = BoxLayout(this, BoxLayout.X_AXIS)
@@ -1192,7 +1194,7 @@ class ClaudioTabbedPanel(
             val home = System.getProperty("user.home")
             val files = findClaudemdFiles()
             if (files.isEmpty()) {
-                panel.add(JLabel("  (none found)").apply { font = MONO_11; foreground = Color.GRAY })
+                panel.add(JLabel("  (none found)").apply { font = MONO_11; foreground = JBColor.GRAY })
             } else {
                 for (path in files) {
                     val rel = when {
@@ -1204,7 +1206,7 @@ class ClaudioTabbedPanel(
                         font = MONO_11
                         cursor = Cursor(Cursor.HAND_CURSOR)
                         toolTipText = path
-                        foreground = UIManager.getColor("Link.activeForeground") ?: Color(100, 150, 255)
+                        foreground = UIManager.getColor("Link.activeForeground") ?: JBUI.CurrentTheme.Link.linkColor()
                         addMouseListener(object : MouseAdapter() {
                             override fun mouseClicked(e: MouseEvent) {
                                 val vf = LocalFileSystem.getInstance().findFileByPath(path) ?: return
