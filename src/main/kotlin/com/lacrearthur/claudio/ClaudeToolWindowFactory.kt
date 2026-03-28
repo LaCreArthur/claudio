@@ -435,7 +435,7 @@ class ClaudePanel(
                 totalTokens >= 1_000 -> "${"%.1f".format(totalTokens / 1_000.0)}k"
                 else -> "$totalTokens"
             }
-            SwingUtilities.invokeLater { costLabel.text = "  \$${"%.4f".format(totalCostUsd)} · ${tokStr}" }
+            SwingUtilities.invokeLater { costLabel.text = "  \$${"%.4f".format(totalCostUsd)} · ${tokStr} / 200k" }
             appendCostRecord(cost, tokens)
         }
         permModeBtn.addActionListener {

@@ -1,3 +1,9 @@
+##### **v0.8.11** (2026-03-28)
+
+**Context Superpowers**
+
+- Context window progress bar - the cost label now shows `$0.0234 · 1.2k / 200k` so you can see how much context you've consumed vs the 200k model limit at a glance
+
 ##### **v0.8.10** (2026-03-28)
 
 **Context Superpowers**

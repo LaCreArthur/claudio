@@ -109,7 +109,7 @@ The IDE knows things no terminal ever will: where the cursor is right now, what 
 - [ ] @symbol autocomplete (PSI) - extend `@file` completion to resolve class/method names to their file:line locations (evidence: Cursor supports, strong IDE moat; effort: medium)
 - [ ] Git blame context - "Ask Claude to Explain" automatically includes git blame for selected lines (who/when/commit) (evidence: JetBrains VCS API, extends existing PSI action; effort: small)
 - [ ] Send to Claude from Project view - right-click any file in Project tree → "Send to Claude" inserts `@filepath` (evidence: ghostty plugin, complements Send Selection; effort: small)
-- [ ] Context window progress bar - show `1.2k/200k` token usage next to cost label using accumulated token count vs known model limits (evidence: issue #40018; uses already-tracked totalTokens; effort: small)
+- [x] Context window progress bar - show `1.2k/200k` token usage next to cost label using accumulated token count vs known model limits (evidence: issue #40018; uses already-tracked totalTokens; effort: small)
 
 ## Principles
 
