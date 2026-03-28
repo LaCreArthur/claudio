@@ -95,7 +95,7 @@ Remaining moat features. Things no terminal or standalone app can touch.
 Deep hooks into IntelliJ's execution model and code model. Things no standalone Claude GUI can do.
 
 - [x] Tab close button (× on each tab - terminates the claude subprocess cleanly)
-- [ ] "Explain this" right-click action (select any code → "Ask Claude to explain" → injects selection + file context via PSI)
+- [x] "Explain this" right-click action (select any code → "Ask Claude to explain" → injects selection + file context via PSI)
 - [ ] Run/test failure injection (when a run configuration fails, offer one-click to send output + stack trace to Claude)
 - [ ] TODO/FIXME scan (scan project TODOs via IDE index, inject as a batch into Claude's input)
 - [ ] Inline diff preview before applying (when Claude writes a file, show native IntelliJ diff dialog before the write lands)

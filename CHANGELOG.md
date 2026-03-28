@@ -1,3 +1,9 @@
+##### **v0.8.1** (2026-03-28)
+
+**IDE-Native Power Features**
+
+- "Ask Claude to Explain" right-click action - select any code in the editor, right-click, and choose "Ask Claude to Explain" to inject the selection and file:line reference into Claudio's input bar; falls back to the current line when nothing is selected
+
 ##### **v0.8.0** (2026-03-28)
 
 **IDE-Native Power Features**

@@ -85,5 +85,12 @@
             <keyboard-shortcut keymap="Mac OS X" first-keystroke="meta alt K"/>
             <keyboard-shortcut keymap="macOS" first-keystroke="meta alt K"/>
         </action>
+
+        <action id="com.lacrearthur.claudio.ExplainWithClaudeAction"
+                class="com.lacrearthur.claudio.ExplainWithClaudeAction"
+                text="Ask Claude to Explain"
+                description="Send selected code to Claudio for explanation">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+        </action>
     </actions>
 </idea-plugin>

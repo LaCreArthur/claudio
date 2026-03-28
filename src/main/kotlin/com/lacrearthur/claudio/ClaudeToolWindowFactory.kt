@@ -737,6 +737,12 @@ class ClaudePanel(
         inputArea.caretPosition = inputArea.document.length
     }
 
+    fun setInputText(text: String) {
+        inputArea.text = text
+        inputArea.requestFocusInWindow()
+        inputArea.caretPosition = inputArea.document.length
+    }
+
     private fun injectBuildErrors() {
         val errors = mutableListOf<String>()
         val seen = mutableSetOf<Any>() // dedup: same Document appears in split views
@@ -971,6 +977,10 @@ class ClaudioTabbedPanel(
 
     fun appendToInput(text: String) {
         (tabbedPane.selectedComponent as? ClaudePanel)?.appendToInput(text)
+    }
+
+    fun setInputText(text: String) {
+        (tabbedPane.selectedComponent as? ClaudePanel)?.setInputText(text)
     }
 
     fun sendText(text: String) {
