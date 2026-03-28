@@ -1,3 +1,9 @@
+##### **v0.8.9** (2026-03-28)
+
+**Usage Analytics**
+
+- Per-project cost tracking - every cost event is appended to `~/.claudio/costs.jsonl`; the History sidebar now shows "Cost today" and "All-time" totals at the bottom, summed across all projects
+
 ##### **v0.8.8** (2026-03-28)
 
 **Usage Analytics**

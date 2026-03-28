@@ -436,6 +436,7 @@ class ClaudePanel(
                 else -> "$totalTokens"
             }
             SwingUtilities.invokeLater { costLabel.text = "  \$${"%.4f".format(totalCostUsd)} · ${tokStr}" }
+            appendCostRecord(cost, tokens)
         }
         permModeBtn.addActionListener {
             val view = terminalView ?: return@addActionListener
@@ -672,6 +673,18 @@ class ClaudePanel(
             file.setBinaryContent(content.toByteArray(Charsets.UTF_8))
         }
         OpenFileDescriptor(project, file).navigate(true)
+    }
+
+    private fun appendCostRecord(cost: Double, tokens: Long) {
+        ApplicationManager.getApplication().executeOnPooledThread {
+            try {
+                val file = File(System.getProperty("user.home"), ".claudio/costs.jsonl")
+                file.parentFile.mkdirs()
+                val date = java.text.SimpleDateFormat("yyyy-MM-dd").format(java.util.Date())
+                val projectPath = project.basePath ?: "unknown"
+                file.appendText("{\"date\":\"$date\",\"project\":\"$projectPath\",\"cost\":$cost,\"tokens\":$tokens}\n")
+            } catch (_: Exception) {}
+        }
     }
 
     private fun buildMarkdown(): String {
@@ -1175,6 +1188,7 @@ class ClaudioTabbedPanel(
 
             add(buildClaudemdIndicator(), BorderLayout.NORTH)
             add(historySection, BorderLayout.CENTER)
+            add(buildCostSummary(), BorderLayout.SOUTH)
 
             sessionList.addMouseListener(object : MouseAdapter() {
                 override fun mouseClicked(e: MouseEvent) {
@@ -1316,6 +1330,70 @@ class ClaudioTabbedPanel(
                 }
             }
             return panel
+        }
+
+        private fun buildCostSummary(): JPanel {
+            val panel = JPanel().apply {
+                layout = BoxLayout(this, BoxLayout.Y_AXIS)
+                border = BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(1, 0, 0, 0, UIManager.getColor("Separator.foreground")),
+                    BorderFactory.createEmptyBorder(4, 4, 4, 4),
+                )
+            }
+            val todayLabel = JLabel("  Cost today: -").apply { font = MONO_11; foreground = JBColor.GRAY }
+            val totalLabel = JLabel("  All-time: -").apply { font = MONO_11; foreground = JBColor.GRAY }
+            panel.add(todayLabel)
+            panel.add(totalLabel)
+            ApplicationManager.getApplication().executeOnPooledThread {
+                val (todayCost, totalCost) = readCostSummary()
+                SwingUtilities.invokeLater {
+                    todayLabel.text = "  Cost today: \$${"%.4f".format(todayCost)}"
+                    totalLabel.text = "  All-time: \$${"%.2f".format(totalCost)}"
+                }
+            }
+            return panel
+        }
+
+        private fun readCostSummary(): Pair<Double, Double> {
+            val file = File(System.getProperty("user.home"), ".claudio/costs.jsonl")
+            if (!file.exists()) return Pair(0.0, 0.0)
+            val today = java.text.SimpleDateFormat("yyyy-MM-dd").format(java.util.Date())
+            var todayCost = 0.0
+            var totalCost = 0.0
+            try {
+                file.bufferedReader().useLines { lines ->
+                    for (line in lines) {
+                        val t = line.trim()
+                        if (t.isEmpty()) continue
+                        val cost = jsonDoubleField(t, "cost") ?: continue
+                        totalCost += cost
+                        val date = jsonStringValField(t, "date") ?: continue
+                        if (date == today) todayCost += cost
+                    }
+                }
+            } catch (_: Exception) {}
+            return Pair(todayCost, totalCost)
+        }
+
+        private fun jsonDoubleField(line: String, key: String): Double? {
+            val marker = "\"$key\":"
+            val idx = line.indexOf(marker)
+            if (idx < 0) return null
+            var i = idx + marker.length
+            while (i < line.length && (line[i] == ' ' || line[i] == '\t')) i++
+            val start = i
+            while (i < line.length && (line[i].isDigit() || line[i] == '.' || line[i] == '-')) i++
+            return line.substring(start, i).toDoubleOrNull()
+        }
+
+        private fun jsonStringValField(line: String, key: String): String? {
+            val marker = "\"$key\":\""
+            val idx = line.indexOf(marker)
+            if (idx < 0) return null
+            val start = idx + marker.length
+            val end = line.indexOf('"', start)
+            if (end < 0) return null
+            return line.substring(start, end)
         }
     }
 

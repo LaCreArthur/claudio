@@ -67,7 +67,7 @@ Turn tabs into purpose-built agents (Roo-killer). Show what they cost.
 - [x] Sticky model: pass `--model <model>` to the claude process at tab launch time
 - [x] Token/cost display per session (parse CLI output)
 - [x] Live cost ticker in status bar while generating
-- [ ] Per-project cost tracking over time
+- [x] Per-project cost tracking over time
 
 ## Phase 5: Deep IDE Integration
 
