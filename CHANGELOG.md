@@ -1,3 +1,9 @@
+##### **v0.8.26** (2026-03-28)
+
+**IDE Intelligence**
+
+- @symbol PSI autocomplete - `@` completions that match by filename now include a precise `:line` pointing at the class declaration; type `@MyClass` and pick the `⊞` entry to inject `@src/MyClass.kt:12` so Claude jumps straight to the declaration; uses universal PSI tree walking so it works for Kotlin, Java, C#, and all other languages supported by the IDE
+
 ##### **v0.8.25** (2026-03-28)
 
 **VCS + Code Intelligence**

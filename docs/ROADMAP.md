@@ -106,7 +106,7 @@ The IDE knows things no terminal ever will: where the cursor is right now, what 
 
 - [x] "Send Current File" action - one click/shortcut to inject `@<active-editor-file>` into input bar (evidence: ghostty-claude-intellij core feature, issue #40020; moat: uses IDE file tracking; effort: small)
 - [x] Debugger context injection - when paused at a breakpoint, "Send to Claude" injects current stack frames + visible variables (evidence: Cursor has this, no JetBrains Claude plugin does; moat: very high - uses XDebugger API; effort: medium)
-- [ ] @symbol autocomplete (PSI) - extend `@file` completion to resolve class/method names to their file:line locations (evidence: Cursor supports, strong IDE moat; effort: medium)
+- [x] @symbol autocomplete (PSI) - extend `@file` completion to resolve class/method names to their file:line locations (evidence: Cursor supports, strong IDE moat; effort: medium)
 - [x] Git blame context - "Ask Claude to Explain" automatically includes git blame for selected lines (who/when/commit) (evidence: JetBrains VCS API, extends existing PSI action; effort: small)
 - [x] Send to Claude from Project view - right-click any file in Project tree → "Send to Claude" inserts `@filepath` (evidence: ghostty plugin, complements Send Selection; effort: small)
 - [x] Context window progress bar - show `1.2k/200k` token usage next to cost label using accumulated token count vs known model limits (evidence: issue #40018; uses already-tracked totalTokens; effort: small)
@@ -131,6 +131,16 @@ The IDE's code model and version control awareness are things no terminal will e
 - [x] Editor bookmarks to Claude - "Send Bookmarks to Claude" action injects all bookmarked file:line locations as a numbered list; bookmarks represent the developer's focus points and annotated TODOs (evidence: BookmarkManager is IDE-only with no terminal equivalent; moat: high; effort: small)
 - [x] Run configuration context - right-click any run configuration → "Send to Claude" injects the config name, type, and effective command line; lets Claude understand exactly how the project runs before giving advice (evidence: RunManager API is IDE-only; natural "explain how to run this" workflow; moat: high; effort: small)
 - [x] Coverage gaps to Claude - after running with coverage, a "Send Uncovered Methods" action reads `CoverageDataManager` and injects methods with zero or partial line coverage; natural trigger for "write tests for these" requests (evidence: CoverageSuite is IDE-only, no terminal equivalent; moat: very high; effort: medium)
+
+## Phase 11: IDE Intelligence
+
+Exploit the IDE's live code model and project graph - things no terminal will ever see in real time.
+
+- [x] @symbol PSI autocomplete - extend `@file` completion to resolve class/method names to their file:line via `JavaPsiFacade.findClass()` and `PsiShortNamesCache`; type `@MyClass` and get the exact source location injected (evidence: Phase 8 leftover; Cursor supports this; moat: very high - PSI class resolution is IDE-only; effort: medium)
+- [ ] Module dependency graph to Claude - "Send Module Graph" action injects the project's module dependency tree via `ModuleManager.modules` + `ModuleRootManager.getDependencies()`; lets Claude understand multi-module project structure instantly (evidence: issue #35814 explicitly mentions "project structure"; moat: high - ModuleManager API is IDE-only; effort: small)
+- [ ] IDE inspections on current file - "Run Inspections for Claude" runs the current file through `InspectionManager` (or uses existing `ProblemDescriptor` results from the daemon) and injects all warnings/errors with file:line as context; deeper than build errors - catches code smells, nullability, unused code (evidence: issue #35814 explicitly mentions "inspections"; moat: very high - InspectionManager is IDE-only; effort: medium)
+- [ ] Recent editor files context - "Send Recent Files to Claude" injects the last N files opened via `EditorHistoryManager.fileList`; useful as a "here's what I've been working on" context burst (evidence: EditorHistoryManager is IDE-only; natural context for architecture questions; moat: medium-high; effort: small)
+- [ ] Gradle/Maven task list injection - "Send Build Tasks to Claude" injects all available Gradle/Maven tasks via `ExternalSystemUtil` / `MavenProjectsManager`; lets Claude know exactly what build targets exist before giving run advice (evidence: issue #35814 "project structure"; moat: medium-high - ExternalSystemUtil is IDE-only; effort: small-medium)
 
 ## Principles
 

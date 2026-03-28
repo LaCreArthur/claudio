@@ -6,6 +6,12 @@ import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.popup.JBPopup
 import com.intellij.openapi.ui.popup.JBPopupFactory
+import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.psi.PsiDocumentManager
+import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiManager
+import com.intellij.psi.PsiNamedElement
+import com.intellij.psi.PsiRecursiveElementWalkingVisitor
 import com.intellij.psi.search.FilenameIndex
 import com.intellij.psi.search.GlobalSearchScope
 import java.awt.Point
@@ -25,8 +31,10 @@ private const val SYMBOL_PREFIX = "⊞ "
  *
  * Triggers when the user types @ anywhere in the input.
  * Filters by the text between @ and the cursor (no spaces).
- * Selecting a file inserts @relative/path at the cursor.
- * For query >= 2 chars, also shows PSI class matches as ⊞ rel/path:line entries.
+ * Selecting a file inserts @relative/path or @relative/path:line at the cursor.
+ * For query >= 2 chars, also shows name-matching files as ⊞ entries.
+ * When the filename maps to a PSI class declaration, the entry includes :line so
+ * Claude receives a precise jump target (e.g. @src/Foo.kt:12).
  *
  * File list is built lazily on first @ keystroke (preload() warms it earlier).
  * Excludes build dirs, .git, .idea, node_modules.
@@ -130,6 +138,8 @@ class AtFileCompletion(
     /**
      * Symbol completions: files whose NAME (not full path) matches the query.
      * Uses FilenameIndex (platform-level, works across all JetBrains IDEs including Rider).
+     * When the file contains a PSI class/interface/object with the same name as the file,
+     * the result includes :line pointing at the declaration so Claude gets a precise target.
      * Results appear with a ⊞ prefix to distinguish them from path-based file results.
      */
     private fun buildSymbolList(query: String): List<String> {
@@ -146,15 +156,41 @@ class AtFileCompletion(
                     }
                     .take(20)
                     .flatMap { filename ->
+                        val nameNoExt = filename.substringBeforeLast('.')
                         FilenameIndex.getVirtualFilesByName(filename, scope).take(2).map { vFile ->
                             val rel = vFile.path.removePrefix(basePath).trimStart('/')
-                            "$SYMBOL_PREFIX$rel"
+                            val line = resolveClassDeclLine(nameNoExt, vFile)
+                            if (line != null) "$SYMBOL_PREFIX$rel:$line" else "$SYMBOL_PREFIX$rel"
                         }
                     }
                     .take(5)
             }
         } catch (_: Exception) {
             emptyList()
+        }
+    }
+
+    /**
+     * Walks the PSI tree of [vFile] looking for a top-level named element whose name
+     * matches [className]. Returns its 1-based line number, or null if not found.
+     * Uses universal PSI APIs - works on Kotlin, Java, C#, and any other language.
+     */
+    private fun resolveClassDeclLine(className: String, vFile: VirtualFile): Int? {
+        return try {
+            val psiFile = PsiManager.getInstance(project).findFile(vFile) ?: return null
+            val doc = PsiDocumentManager.getInstance(project).getDocument(psiFile) ?: return null
+            var line: Int? = null
+            psiFile.accept(object : PsiRecursiveElementWalkingVisitor() {
+                override fun visitElement(element: PsiElement) {
+                    if (element is PsiNamedElement && element.name == className && element.parent == psiFile) {
+                        line = doc.getLineNumber(element.textOffset) + 1
+                    }
+                    if (line == null) super.visitElement(element)
+                }
+            })
+            line
+        } catch (_: Throwable) {
+            null
         }
     }
 
