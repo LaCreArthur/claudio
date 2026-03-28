@@ -236,6 +236,13 @@
             <add-to-group group-id="ToolsMenu" anchor="last"/>
         </action>
 
+        <action id="com.lacrearthur.claudio.SendProjectHealthAction"
+                class="com.lacrearthur.claudio.SendProjectHealthAction"
+                text="Send Project Health to Claude"
+                description="Aggregate error and warning counts across all open files via the IDE daemon and inject a severity map sorted by issue count into the Claudio input bar">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
+
         <action id="com.lacrearthur.claudio.SendTestHistoryAction"
                 class="com.lacrearthur.claudio.SendTestHistoryAction"
                 text="Send Test History to Claude"

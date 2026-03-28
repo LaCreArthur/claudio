@@ -1,3 +1,9 @@
+##### **v0.8.43** (2026-03-28)
+
+**Developer Awareness**
+
+- Project health snapshot - Tools > Send Project Health to Claude aggregates error and warning counts from all currently open files via the IDE's live daemon analysis and injects a severity map sorted by issue count; gives Claude the full health picture before asking for fixes
+
 ##### **v0.8.42** (2026-03-28)
 
 **Living Context**
