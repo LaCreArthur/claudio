@@ -1,3 +1,9 @@
+##### **v0.7.6** (2026-03-28)
+
+**Polish**
+
+- Task completion notification - when Claude finishes generating and the Claudio panel is not visible, an IDE balloon notification pops up with the tab name and a "Focus" action to jump back instantly
+
 ##### **v0.7.5** (2026-03-28)
 
 **Polish**

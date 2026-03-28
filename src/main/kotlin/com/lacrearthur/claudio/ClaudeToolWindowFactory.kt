@@ -14,6 +14,7 @@ import com.intellij.openapi.util.Disposer
 import com.lacrearthur.claudio.test.ClaudioTestServiceImpl
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
+import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.terminal.frontend.toolwindow.TerminalToolWindowTabsManager
 import com.intellij.terminal.frontend.view.TerminalView
 import com.intellij.terminal.frontend.view.TerminalViewSessionState
@@ -27,6 +28,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import org.jetbrains.plugins.terminal.view.TerminalContentChangeEvent
 import org.jetbrains.plugins.terminal.view.TerminalOutputModelListener
+import com.intellij.notification.Notification
+import com.intellij.notification.NotificationType
+import com.intellij.notification.Notifications
+import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.ui.DialogWrapper
@@ -369,6 +375,7 @@ class ClaudePanel(
 
     @Volatile private var lastOutputTime = 0L
     private val activityTimer: Timer
+    private var wasGenerating = false
 
     init {
         log.warn("[CLAUDE] ClaudePanel init, project=${project.name} basePath=${project.basePath}")
@@ -602,7 +609,24 @@ class ClaudePanel(
     }
 
     private fun updateStatusText(text: String) {
-        SwingUtilities.invokeLater { statusLabel.text = "  $text" }
+        SwingUtilities.invokeLater {
+            statusLabel.text = "  $text"
+            val nowReady = text == "Ready"
+            if (wasGenerating && nowReady) notifyIfUnfocused()
+            wasGenerating = text == "Generating..."
+        }
+    }
+
+    private fun notifyIfUnfocused() {
+        val tw = ToolWindowManager.getInstance(project).getToolWindow("Claude") ?: return
+        if (tw.isVisible) return
+        val tabPanel = SwingUtilities.getAncestorOfClass(ClaudioTabbedPanel::class.java, this) as? ClaudioTabbedPanel
+        val tabName = tabPanel?.getTabName(this) ?: "Claude"
+        val notification = Notification("Claudio", "Claude finished", tabName, NotificationType.INFORMATION)
+        notification.addAction(object : AnAction("Focus") {
+            override fun actionPerformed(e: AnActionEvent) { tw.activate(null) }
+        })
+        Notifications.Bus.notify(notification, project)
     }
 
     fun sendText(text: String) {
@@ -921,6 +945,11 @@ class ClaudioTabbedPanel(
     fun currentStatus(): String {
         val panel = tabbedPane.selectedComponent as? ClaudePanel ?: return "Off"
         return panel.currentStatus()
+    }
+
+    fun getTabName(panel: ClaudePanel): String {
+        val idx = tabbedPane.indexOfComponent(panel)
+        return if (idx >= 0) tabbedPane.getTitleAt(idx) else "Claude"
     }
 
     override fun dispose() {}

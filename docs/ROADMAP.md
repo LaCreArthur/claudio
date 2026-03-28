@@ -84,7 +84,7 @@ Remaining moat features. Things no terminal or standalone app can touch.
 
 - [ ] Toolbar (new session, model selector, settings)
 - [ ] Theme-aware styling for dialogs
-- [ ] Sound/notification on task completion (window unfocused)
+- [x] Sound/notification on task completion (window unfocused)
 - [x] Keyboard shortcuts: Escape - return to editor, Cmd+Shift+C - focus Claude
 - [x] Status bar widget (session state, model, cost)
 - [ ] Session favorites / pinning
