@@ -1,3 +1,9 @@
+##### **v0.7.0** (2026-03-28)
+
+**Deep IDE Integration**
+
+- Checkpoint list - recent git commits appear in the sidebar below History; double-click any entry to preview the full diff inline
+
 ##### **v0.6.9** (2026-03-28)
 
 **Deep IDE Integration**

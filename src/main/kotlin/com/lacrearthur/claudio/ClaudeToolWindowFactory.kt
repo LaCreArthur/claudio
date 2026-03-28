@@ -39,6 +39,8 @@ private val MONO_11 = Font("JetBrains Mono", Font.PLAIN, 11)
 
 private data class SessionEntry(val preview: String, val timestamp: String, val sessionId: String)
 
+private data class CheckpointEntry(val hash: String, val message: String, val timeAgo: String)
+
 private data class ClaudePreset(val name: String, val systemPrompt: String, val model: String = "")
 
 private val DEFAULT_PRESETS = listOf(
@@ -810,7 +812,13 @@ class ClaudioTabbedPanel(
 
     init {
         Disposer.register(parentDisposable, this)
-        add(SessionHistoryPanel(), BorderLayout.WEST)
+        val sidebarSplit = JSplitPane(JSplitPane.VERTICAL_SPLIT, SessionHistoryPanel(), CheckpointPanel()).apply {
+            resizeWeight = 0.6
+            dividerSize = 4
+            isContinuousLayout = true
+            border = null
+        }
+        add(sidebarSplit, BorderLayout.WEST)
         addTab()
         tabbedPane.addTab(ADD_TAB, JPanel())
         tabbedPane.addChangeListener {
@@ -1028,6 +1036,120 @@ class ClaudioTabbedPanel(
                     } ?: "(no message)"
                 }
             } catch (_: Exception) { "(unreadable)" }
+        }
+    }
+
+    /** Sidebar panel listing recent git checkpoints (commits) with diff preview on double-click. */
+    private inner class CheckpointPanel : JPanel(BorderLayout()) {
+        private val listModel = DefaultListModel<CheckpointEntry>()
+        private val checkpointList = JList(listModel)
+
+        init {
+            preferredSize = Dimension(220, 0)
+            border = BorderFactory.createMatteBorder(0, 0, 0, 1, UIManager.getColor("Separator.foreground"))
+
+            val header = JLabel("  Checkpoints")
+            header.font = MONO_11
+            header.border = BorderFactory.createEmptyBorder(4, 0, 4, 0)
+
+            checkpointList.font = MONO_11
+            checkpointList.cellRenderer = object : DefaultListCellRenderer() {
+                override fun getListCellRendererComponent(
+                    list: JList<*>, value: Any?, index: Int, isSelected: Boolean, cellHasFocus: Boolean,
+                ): Component {
+                    val entry = value as CheckpointEntry
+                    val comp = super.getListCellRendererComponent(
+                        list, "${entry.hash}  ${entry.message}", index, isSelected, cellHasFocus,
+                    )
+                    (comp as JLabel).apply {
+                        font = MONO_11
+                        toolTipText = "${entry.message}  (${entry.timeAgo})"
+                    }
+                    return comp
+                }
+            }
+
+            add(header, BorderLayout.NORTH)
+            add(JScrollPane(checkpointList), BorderLayout.CENTER)
+
+            checkpointList.addMouseListener(object : MouseAdapter() {
+                override fun mouseClicked(e: MouseEvent) {
+                    if (e.clickCount == 2) {
+                        val entry = checkpointList.selectedValue ?: return
+                        showDiffPopup(entry)
+                    }
+                }
+            })
+
+            ApplicationManager.getApplication().executeOnPooledThread { loadCheckpoints() }
+        }
+
+        private fun loadCheckpoints() {
+            val gitRoot = findGitRoot() ?: return
+            try {
+                val proc = ProcessBuilder("git", "log", "--format=%h|%s|%cr", "-10")
+                    .directory(gitRoot)
+                    .redirectErrorStream(true)
+                    .start()
+                val lines = proc.inputStream.bufferedReader().readLines()
+                proc.waitFor()
+                val entries = lines.mapNotNull { line ->
+                    val parts = line.split("|", limit = 3)
+                    if (parts.size < 3) return@mapNotNull null
+                    CheckpointEntry(parts[0].trim(), parts[1].trim().take(45), parts[2].trim())
+                }
+                SwingUtilities.invokeLater {
+                    listModel.clear()
+                    entries.forEach { listModel.addElement(it) }
+                }
+            } catch (_: Exception) {
+                // Not a git repo or git not available - stay empty silently
+            }
+        }
+
+        private fun findGitRoot(): File? {
+            val basePath = project.basePath ?: return null
+            var dir = File(basePath)
+            while (dir.exists()) {
+                if (File(dir, ".git").exists()) return dir
+                dir = dir.parentFile ?: break
+            }
+            return null
+        }
+
+        private fun showDiffPopup(entry: CheckpointEntry) {
+            ApplicationManager.getApplication().executeOnPooledThread {
+                val gitRoot = findGitRoot() ?: return@executeOnPooledThread
+                try {
+                    val proc = ProcessBuilder("git", "show", entry.hash)
+                        .directory(gitRoot)
+                        .redirectErrorStream(true)
+                        .start()
+                    val output = proc.inputStream.bufferedReader().readText()
+                    proc.waitFor()
+                    // Strip ANSI escape sequences
+                    val clean = output.replace(Regex("\u001b\\[[0-9;]*m"), "")
+                    SwingUtilities.invokeLater {
+                        val textArea = JTextArea(clean).apply {
+                            isEditable = false
+                            font = Font("JetBrains Mono", Font.PLAIN, 11)
+                            caretPosition = 0
+                        }
+                        val scroll = JScrollPane(textArea).apply {
+                            preferredSize = Dimension(800, 600)
+                        }
+                        val dialog = object : DialogWrapper(project, true) {
+                            init {
+                                title = "${entry.hash} - ${entry.message}"
+                                init()
+                            }
+                            override fun createCenterPanel() = scroll
+                            override fun createActions() = arrayOf(okAction)
+                        }
+                        dialog.show()
+                    }
+                } catch (_: Exception) {}
+            }
         }
     }
 
