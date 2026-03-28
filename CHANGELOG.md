@@ -1,3 +1,9 @@
+##### **v0.8.44** (2026-03-28)
+
+**Developer Awareness**
+
+- Parameter info at caret - right-click anywhere in an expression and choose "Send Caret Context to Claude"; injects the PSI element chain at the cursor (element, parent, grandparent, containing call) so Claude sees exactly where the cursor is in the code structure without you having to describe it
+
 ##### **v0.8.43** (2026-03-28)
 
 **Developer Awareness**
