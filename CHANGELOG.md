@@ -1,3 +1,9 @@
+##### **v0.8.36** (2026-03-28)
+
+**IDE Integration**
+
+- Search Everywhere integration - press Shift+Shift and type any query to see "Ask Claude: <query>" in the results; selecting it populates the Claudio input bar instantly, making Claude a first-class citizen in the IDE's universal search alongside files, actions, and symbols
+
 ##### **v0.8.35** (2026-03-28)
 
 **Code Archaeology**

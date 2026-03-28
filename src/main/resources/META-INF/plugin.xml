@@ -57,6 +57,9 @@
 
         <consoleFilterProvider implementation="com.lacrearthur.claudio.ClaudeFileFilterProvider"/>
 
+        <searchEverywhereContributor
+            implementation="com.lacrearthur.claudio.ClaudioSearchEverywhereContributorFactory"/>
+
         <statusBarWidgetFactory implementation="com.lacrearthur.claudio.ClaudioStatusBarWidgetFactory"
                                 id="ClaudioStatus"
                                 order="last"/>
