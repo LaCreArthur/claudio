@@ -1,3 +1,9 @@
+##### **v0.8.8** (2026-03-28)
+
+**Usage Analytics**
+
+- Live cost ticker in status bar - the IDE status bar widget now shows the running session cost alongside the generating/ready state (e.g. `⚡ Generating... · $0.0234`); hidden when cost is zero
+
 ##### **v0.8.7** (2026-03-28)
 
 **Usage Analytics**

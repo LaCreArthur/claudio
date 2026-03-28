@@ -26,7 +26,9 @@ class ClaudioStatusBarWidget(private val project: Project) : StatusBarWidget, St
         val tw = ToolWindowManager.getInstance(project).getToolWindow("Claude") ?: return ""
         val content = tw.contentManager.getContent(0) ?: return ""
         val panel = content.component as? ClaudioTabbedPanel ?: return ""
-        return "⚡ ${panel.currentStatus()}"
+        val status = panel.currentStatus()
+        val cost = panel.sessionCost()
+        return if (cost > 0) "⚡ $status · \$${"%.4f".format(cost)}" else "⚡ $status"
     }
 
     override fun getTooltipText() = "Claudio session status - click to focus"

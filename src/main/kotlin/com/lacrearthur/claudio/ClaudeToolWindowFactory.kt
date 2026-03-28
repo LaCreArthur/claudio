@@ -754,6 +754,7 @@ class ClaudePanel(
     }
 
     fun currentStatus(): String = statusLabel.text.trim()
+    fun sessionCost(): Double = totalCostUsd
 
     fun appendToInput(text: String) {
         inputArea.append(text)
@@ -1053,6 +1054,11 @@ class ClaudioTabbedPanel(
     fun currentStatus(): String {
         val panel = tabbedPane.selectedComponent as? ClaudePanel ?: return "Off"
         return panel.currentStatus()
+    }
+
+    fun sessionCost(): Double {
+        val panel = tabbedPane.selectedComponent as? ClaudePanel ?: return 0.0
+        return panel.sessionCost()
     }
 
     fun getTabName(panel: ClaudePanel): String {

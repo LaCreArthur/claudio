@@ -66,7 +66,7 @@ Turn tabs into purpose-built agents (Roo-killer). Show what they cost.
 - [x] Preset editor: create/edit/delete custom presets, persist to `~/.claudio/presets.json`
 - [x] Sticky model: pass `--model <model>` to the claude process at tab launch time
 - [x] Token/cost display per session (parse CLI output)
-- [ ] Live cost ticker in status bar while generating
+- [x] Live cost ticker in status bar while generating
 - [ ] Per-project cost tracking over time
 
 ## Phase 5: Deep IDE Integration
