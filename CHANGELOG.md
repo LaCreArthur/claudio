@@ -1,3 +1,9 @@
+##### **v0.8.32** (2026-03-28)
+
+**Code Archaeology**
+
+- Test run history to Claude - Tools > Send Test History to Claude injects the last 5 test runs (name, timestamp, pass/fail counts, duration, first failure message per run) from the project's .idea/testHistory/ directory; natural trigger for "why are these tests flaky" or "what broke"
+
 ##### **v0.8.31** (2026-03-28)
 
 **Code Archaeology**

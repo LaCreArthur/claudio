@@ -193,5 +193,12 @@
                 description="Collect IDE daemon warnings and errors for the current file and inject them into the Claudio input bar">
             <add-to-group group-id="ToolsMenu" anchor="last"/>
         </action>
+
+        <action id="com.lacrearthur.claudio.SendTestHistoryAction"
+                class="com.lacrearthur.claudio.SendTestHistoryAction"
+                text="Send Test History to Claude"
+                description="Inject the last 5 test runs from .idea/testHistory/ (pass/fail counts, duration, failure messages) into the Claudio input bar">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
     </actions>
 </idea-plugin>
