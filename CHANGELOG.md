@@ -1,3 +1,9 @@
+##### **v0.8.28** (2026-03-28)
+
+**IDE Intelligence**
+
+- Send open files to Claude - Tools > Send Recent Files to Claude injects all currently open project files as a numbered list into the input bar; useful as a "here's what I'm working on" context burst before architecture questions
+
 ##### **v0.8.27** (2026-03-28)
 
 **IDE Intelligence**

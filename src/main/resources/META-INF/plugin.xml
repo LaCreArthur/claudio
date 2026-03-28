@@ -164,5 +164,12 @@
                 description="Inject the project module dependency tree into the Claudio input bar">
             <add-to-group group-id="ToolsMenu" anchor="last"/>
         </action>
+
+        <action id="com.lacrearthur.claudio.SendRecentFilesAction"
+                class="com.lacrearthur.claudio.SendRecentFilesAction"
+                text="Send Recent Files to Claude"
+                description="Inject the last 15 recently opened project files into the Claudio input bar">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
     </actions>
 </idea-plugin>
