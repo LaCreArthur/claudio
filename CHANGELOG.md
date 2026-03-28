@@ -1,3 +1,9 @@
+##### **v0.7.3** (2026-03-28)
+
+**Deep IDE Integration**
+
+- MCP server status panel - a "MCP Servers" panel in the sidebar lists every server configured in `~/.claude/settings.json`; double-click any entry to open settings.json in the editor
+
 ##### **v0.7.2** (2026-03-28)
 
 **Deep IDE Integration**

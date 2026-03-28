@@ -77,7 +77,7 @@ Remaining moat features. Things no terminal or standalone app can touch.
 - [x] Checkpoint list with diff preview (visual rewind)
 - [x] File change notifications (detect writes - show diff in editor)
 - [x] CLAUDE.md indicator (show active files, edit from plugin)
-- [ ] MCP server status panel (connected servers, tools, enable/disable)
+- [x] MCP server status panel (connected servers, tools, enable/disable)
 - [ ] One-click MCP setup (browse + install servers)
 
 ## Phase 6: Polish

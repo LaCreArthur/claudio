@@ -826,8 +826,14 @@ class ClaudioTabbedPanel(
             isContinuousLayout = true
             border = null
         }
-        val sidebarSplit = JSplitPane(JSplitPane.VERTICAL_SPLIT, topSplit, ChangedFilesPanel()).apply {
-            resizeWeight = 0.75
+        val bottomSplit = JSplitPane(JSplitPane.VERTICAL_SPLIT, ChangedFilesPanel(), McpServersPanel()).apply {
+            resizeWeight = 0.5
+            dividerSize = 4
+            isContinuousLayout = true
+            border = null
+        }
+        val sidebarSplit = JSplitPane(JSplitPane.VERTICAL_SPLIT, topSplit, bottomSplit).apply {
+            resizeWeight = 0.7
             dividerSize = 4
             isContinuousLayout = true
             border = null
@@ -1267,6 +1273,105 @@ class ClaudioTabbedPanel(
                     }
                 }
             )
+        }
+    }
+
+    /** Sidebar panel listing MCP servers configured in ~/.claude/settings.json. */
+    private inner class McpServersPanel : JPanel(BorderLayout()) {
+        private val listModel = DefaultListModel<String>()
+        private val serverList = JList(listModel)
+
+        init {
+            preferredSize = Dimension(220, 0)
+            border = BorderFactory.createMatteBorder(0, 0, 0, 1, UIManager.getColor("Separator.foreground"))
+            val header = JLabel("  MCP Servers").apply {
+                font = MONO_11
+                border = BorderFactory.createEmptyBorder(4, 0, 4, 0)
+            }
+            serverList.font = MONO_11
+            add(header, BorderLayout.NORTH)
+            add(JScrollPane(serverList), BorderLayout.CENTER)
+            serverList.addMouseListener(object : MouseAdapter() {
+                override fun mouseClicked(e: MouseEvent) {
+                    if (e.clickCount == 2) openSettings()
+                }
+            })
+            ApplicationManager.getApplication().executeOnPooledThread { loadServers() }
+        }
+
+        private fun loadServers() {
+            val settingsFile = File(System.getProperty("user.home"), ".claude/settings.json")
+            val entries = mutableListOf<String>()
+            try {
+                if (!settingsFile.exists()) { entries.add("(none configured)"); return }
+                val text = settingsFile.readText()
+                val mcpIdx = text.indexOf("\"mcpServers\"")
+                if (mcpIdx < 0) { entries.add("(none configured)"); return }
+                val objStart = text.indexOf('{', mcpIdx + 12)
+                if (objStart < 0) { entries.add("(none configured)"); return }
+                val objEnd = jsonObjectEnd(text, objStart)
+                if (objEnd < 0) { entries.add("(none configured)"); return }
+                val mcpObj = text.substring(objStart + 1, objEnd)
+                var pos = 0
+                while (pos < mcpObj.length) {
+                    val q1 = mcpObj.indexOf('"', pos)
+                    if (q1 < 0) break
+                    val q2 = mcpObj.indexOf('"', q1 + 1)
+                    if (q2 < 0) break
+                    val name = mcpObj.substring(q1 + 1, q2)
+                    val serverStart = mcpObj.indexOf('{', q2 + 1)
+                    if (serverStart < 0) break
+                    val serverEnd = jsonObjectEnd(mcpObj, serverStart)
+                    if (serverEnd < 0) break
+                    val serverObj = mcpObj.substring(serverStart + 1, serverEnd)
+                    val type = jsonStringField(serverObj, "type") ?: "stdio"
+                    entries.add("$name  ($type)")
+                    pos = serverEnd + 1
+                }
+                if (entries.isEmpty()) entries.add("(none configured)")
+            } catch (_: Exception) {
+                entries.add("(error reading settings)")
+            }
+            SwingUtilities.invokeLater { entries.forEach { listModel.addElement(it) } }
+        }
+
+        private fun openSettings() {
+            val f = File(System.getProperty("user.home"), ".claude/settings.json")
+            if (!f.exists()) return
+            val vf = LocalFileSystem.getInstance().findFileByPath(f.absolutePath) ?: return
+            SwingUtilities.invokeLater { OpenFileDescriptor(project, vf).navigate(true) }
+        }
+
+        private fun jsonObjectEnd(s: String, start: Int): Int {
+            var depth = 0; var inStr = false; var escape = false
+            for (i in start until s.length) {
+                val c = s[i]
+                if (escape) { escape = false; continue }
+                if (c == '\\' && inStr) { escape = true; continue }
+                if (c == '"') { inStr = !inStr; continue }
+                if (inStr) continue
+                if (c == '{') depth++
+                if (c == '}') { depth--; if (depth == 0) return i }
+            }
+            return -1
+        }
+
+        private fun jsonStringField(obj: String, key: String): String? {
+            val marker = "\"$key\""
+            val idx = obj.indexOf(marker)
+            if (idx < 0) return null
+            val colon = obj.indexOf(':', idx + marker.length)
+            if (colon < 0) return null
+            var i = colon + 1
+            while (i < obj.length && obj[i] != '"') i++
+            if (i >= obj.length) return null
+            i++
+            val sb = StringBuilder()
+            while (i < obj.length && obj[i] != '"') {
+                if (obj[i] == '\\') { i += 2; continue }
+                sb.append(obj[i++])
+            }
+            return sb.toString().ifEmpty { null }
         }
     }
 
