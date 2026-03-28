@@ -829,9 +829,6 @@ class ClaudioTabbedPanel(
             }
         }
 
-        // Preset launcher toolbar - sits above the tab strip, right-aligned.
-        // Placement: NORTH of a wrapper panel that holds the tabbedPane in CENTER.
-        // This keeps it physically adjacent to the "+" tab without touching SessionHistoryPanel.
         val presetBtn = JButton("⚡").apply {
             toolTipText = "Agent presets - open a new session with a pre-loaded agent"
             font = MONO_11
@@ -847,7 +844,6 @@ class ClaudioTabbedPanel(
                         addTab(model = preset.model)
                         val newIdx = tabbedPane.selectedIndex
                         if (newIdx >= 0) {
-                            tabbedPane.setTitleAt(newIdx, preset.name)
                             (tabbedPane.getTabComponentAt(newIdx) as? TabLabel)?.rename(preset.name)
                         }
                         appendToInput(preset.systemPrompt)
@@ -1043,6 +1039,7 @@ class ClaudioTabbedPanel(
     private inner class CheckpointPanel : JPanel(BorderLayout()) {
         private val listModel = DefaultListModel<CheckpointEntry>()
         private val checkpointList = JList(listModel)
+        private val gitRoot: File? by lazy { findGitRoot() }
 
         init {
             preferredSize = Dimension(220, 0)
@@ -1085,14 +1082,15 @@ class ClaudioTabbedPanel(
         }
 
         private fun loadCheckpoints() {
-            val gitRoot = findGitRoot() ?: return
+            val root = gitRoot ?: return
             try {
                 val proc = ProcessBuilder("git", "log", "--format=%h|%s|%cr", "-10")
-                    .directory(gitRoot)
+                    .directory(root)
                     .redirectErrorStream(true)
                     .start()
                 val lines = proc.inputStream.bufferedReader().readLines()
-                proc.waitFor()
+                proc.waitFor(5, java.util.concurrent.TimeUnit.SECONDS)
+                proc.destroy()
                 val entries = lines.mapNotNull { line ->
                     val parts = line.split("|", limit = 3)
                     if (parts.size < 3) return@mapNotNull null
@@ -1119,20 +1117,21 @@ class ClaudioTabbedPanel(
 
         private fun showDiffPopup(entry: CheckpointEntry) {
             ApplicationManager.getApplication().executeOnPooledThread {
-                val gitRoot = findGitRoot() ?: return@executeOnPooledThread
+                val root = gitRoot ?: return@executeOnPooledThread
                 try {
                     val proc = ProcessBuilder("git", "show", entry.hash)
-                        .directory(gitRoot)
+                        .directory(root)
                         .redirectErrorStream(true)
                         .start()
-                    val output = proc.inputStream.bufferedReader().readText()
-                    proc.waitFor()
+                    val output = proc.inputStream.bufferedReader().readLines().take(2000).joinToString("\n")
+                    proc.waitFor(5, java.util.concurrent.TimeUnit.SECONDS)
+                    proc.destroy()
                     // Strip ANSI escape sequences
                     val clean = output.replace(Regex("\u001b\\[[0-9;]*m"), "")
                     SwingUtilities.invokeLater {
                         val textArea = JTextArea(clean).apply {
                             isEditable = false
-                            font = Font("JetBrains Mono", Font.PLAIN, 11)
+                            font = MONO_11
                             caretPosition = 0
                         }
                         val scroll = JScrollPane(textArea).apply {
