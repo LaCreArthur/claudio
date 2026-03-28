@@ -1,3 +1,9 @@
+##### **v0.8.30** (2026-03-28)
+
+**IDE Intelligence**
+
+- Gradle/Maven task list to Claude - Tools > Send Build Tasks to Claude injects all available Gradle tasks grouped by category (up to 60) into the input bar; lets Claude understand what build targets exist before giving run or test advice
+
 ##### **v0.8.29** (2026-03-28)
 
 **IDE Intelligence**

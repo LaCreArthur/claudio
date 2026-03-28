@@ -7,7 +7,7 @@ plugins {
 }
 
 group = 'com.lacrearthur.claudio'
-version = '0.8.29'
+version = '0.8.30'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_21
@@ -36,6 +36,7 @@ dependencies {
     intellijPlatform {
         intellijIdea('2025.3.1')
         bundledPlugin('org.jetbrains.plugins.terminal')  // Reworked Terminal API
+        bundledPlugin('org.jetbrains.plugins.gradle')    // GradleConstants, ExternalSystemApiUtil
         bundledModule('intellij.platform.coverage')      // CoverageDataManager API
         bundledModule('intellij.platform.coverage.agent') // ProjectData / ClassData / LineData
 

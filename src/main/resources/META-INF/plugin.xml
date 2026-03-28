@@ -165,6 +165,13 @@
             <add-to-group group-id="ToolsMenu" anchor="last"/>
         </action>
 
+        <action id="com.lacrearthur.claudio.SendBuildTasksAction"
+                class="com.lacrearthur.claudio.SendBuildTasksAction"
+                text="Send Build Tasks to Claude"
+                description="Inject all available Gradle tasks grouped by category into the Claudio input bar">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
+
         <action id="com.lacrearthur.claudio.SendRecentFilesAction"
                 class="com.lacrearthur.claudio.SendRecentFilesAction"
                 text="Send Recent Files to Claude"
