@@ -46,11 +46,24 @@ class CliOutputParser {
 
     var onQuestion: ((ParsedQuestion) -> Unit)? = null
     var onPermissionMode: ((String) -> Unit)? = null
+    var onCostLine: ((cost: Double, tokens: Long) -> Unit)? = null
 
     private val ansiRegex = Regex("""\u001b(?:\[[0-9;?]*[a-zA-Z]|\][^\u0007]*\u0007|[()][0-9A-B]|[=>])""")
 
     fun feed(rawText: String) {
         val text = ansiRegex.replace(rawText, "")
+
+        // Cost line: "Cost: $0.0234 · Input: 1,234 tokens · Output: 456 tokens · Cache read: 789 tokens"
+        if (text.contains("Cost:") && text.contains("$")) {
+            val costMatch = Regex("""Cost:\s*\$(\d+\.\d+)""").find(text)
+            if (costMatch != null) {
+                val cost = costMatch.groupValues[1].toDoubleOrNull() ?: 0.0
+                val inputTok = Regex("""Input:\s*([\d,]+)\s*tokens?""").find(text)?.groupValues?.get(1)?.replace(",", "")?.toLongOrNull() ?: 0L
+                val outputTok = Regex("""Output:\s*([\d,]+)\s*tokens?""").find(text)?.groupValues?.get(1)?.replace(",", "")?.toLongOrNull() ?: 0L
+                val cacheTok = Regex("""Cache[^:]*:\s*([\d,]+)\s*tokens?""").findAll(text).sumOf { it.groupValues[1].replace(",", "").toLongOrNull() ?: 0L }
+                if (cost > 0) onCostLine?.invoke(cost, inputTok + outputTok + cacheTok)
+            }
+        }
 
         // Permission mode badge: "⏵⏵ accept edits on (shift+tab to cycle)" or "? for shortcuts"
         val modeLine = text.lines().firstOrNull { it.contains("shift+tab to cycle") || it.trim() == "? for shortcuts" }

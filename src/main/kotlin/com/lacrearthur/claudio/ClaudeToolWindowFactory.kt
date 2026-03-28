@@ -385,6 +385,13 @@ class ClaudePanel(
     private val activityTimer: Timer
     private var wasGenerating = false
     private val sessionTranscript = StringBuilder()
+    private var totalCostUsd = 0.0
+    private var totalTokens = 0L
+    private val costLabel = JLabel("").apply {
+        font = Font("JetBrains Mono", Font.PLAIN, JBUI.scale(10))
+        foreground = JBColor.GRAY
+        toolTipText = "Session cost and token usage"
+    }
 
     init {
         log.warn("[CLAUDE] ClaudePanel init, project=${project.name} basePath=${project.basePath}")
@@ -420,6 +427,16 @@ class ClaudePanel(
         outputParser.onPermissionMode = { mode ->
             SwingUtilities.invokeLater { permModeBtn.text = "⚡ $mode" }
         }
+        outputParser.onCostLine = { cost, tokens ->
+            totalCostUsd += cost
+            totalTokens += tokens
+            val tokStr = when {
+                totalTokens >= 1_000_000 -> "${"%.1f".format(totalTokens / 1_000_000.0)}M"
+                totalTokens >= 1_000 -> "${"%.1f".format(totalTokens / 1_000.0)}k"
+                else -> "$totalTokens"
+            }
+            SwingUtilities.invokeLater { costLabel.text = "  \$${"%.4f".format(totalCostUsd)} · ${tokStr}" }
+        }
         permModeBtn.addActionListener {
             val view = terminalView ?: return@addActionListener
             view.coroutineScope.launch { view.createSendTextBuilder().send("\u001b[Z") }
@@ -452,6 +469,9 @@ class ClaudePanel(
         terminalContainer.removeAll()
         terminalView = null
         sessionTranscript.clear()
+        totalCostUsd = 0.0
+        totalTokens = 0L
+        SwingUtilities.invokeLater { costLabel.text = "" }
         updateStatusText("Starting...")
 
         val tabsManager = try {
@@ -864,6 +884,8 @@ class ClaudePanel(
         })
         rightPanel.add(Box.createVerticalStrut(4))
         rightPanel.add(statusLabel)
+        rightPanel.add(Box.createVerticalStrut(2))
+        rightPanel.add(costLabel)
 
         bar.add(scroll, BorderLayout.CENTER)
         bar.add(rightPanel, BorderLayout.EAST)

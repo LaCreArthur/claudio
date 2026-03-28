@@ -1,3 +1,9 @@
+##### **v0.8.7** (2026-03-28)
+
+**Usage Analytics**
+
+- Token/cost display per session - a subtle cost label below the status indicator shows running session cost and token count (e.g. `$0.0234 · 1.2k`); parsed from the CLI cost line; resets on new session
+
 ##### **v0.8.6** (2026-03-28)
 
 **Deep IDE Integration**
