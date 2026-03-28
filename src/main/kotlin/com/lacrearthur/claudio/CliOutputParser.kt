@@ -131,7 +131,8 @@ class CliOutputParser {
                 foundFirstOption = true
                 val num = match.groupValues[1].toInt()
                 val label = match.groupValues[2]
-                val isFreeText = label.contains("Type something", ignoreCase = true)
+                val isFreeText = label.trim() == "__other__"
+                        || label.contains("Type something", ignoreCase = true)
                         || label.contains("type your", ignoreCase = true)
                 options.add(ParsedOption(num, label, isFreeText = isFreeText))
                 lastOptionIdx = i
