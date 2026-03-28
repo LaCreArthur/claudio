@@ -171,5 +171,12 @@
                 description="Inject the last 15 recently opened project files into the Claudio input bar">
             <add-to-group group-id="ToolsMenu" anchor="last"/>
         </action>
+
+        <action id="com.lacrearthur.claudio.RunInspectionsForClaudeAction"
+                class="com.lacrearthur.claudio.RunInspectionsForClaudeAction"
+                text="Run Inspections for Claude"
+                description="Collect IDE daemon warnings and errors for the current file and inject them into the Claudio input bar">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
     </actions>
 </idea-plugin>

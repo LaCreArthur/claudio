@@ -1,3 +1,9 @@
+##### **v0.8.29** (2026-03-28)
+
+**IDE Intelligence**
+
+- IDE inspections on current file - Tools > Run Inspections for Claude reads existing daemon analysis results (warnings + errors) from the current editor file and injects them as a `file:line: severity: message` list into the input bar; capped at 50; deeper than build errors - catches code smells, nullability issues, unused code
+
 ##### **v0.8.28** (2026-03-28)
 
 **IDE Intelligence**
