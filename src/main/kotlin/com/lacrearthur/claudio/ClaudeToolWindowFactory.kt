@@ -46,6 +46,10 @@ import com.intellij.openapi.vfs.newvfs.BulkFileListener
 import com.intellij.openapi.vfs.newvfs.events.VFileContentChangeEvent
 import com.intellij.openapi.vfs.newvfs.events.VFileCreateEvent
 import com.intellij.openapi.vfs.newvfs.events.VFileEvent
+import com.intellij.diff.DiffContentFactory
+import com.intellij.diff.DiffDialogHints
+import com.intellij.diff.DiffManager
+import com.intellij.diff.requests.SimpleDiffRequest
 import java.awt.*
 import java.awt.event.*
 import java.io.File
@@ -1389,9 +1393,7 @@ class ClaudioTabbedPanel(
                 override fun mouseClicked(e: MouseEvent) {
                     if (e.clickCount == 2) {
                         val rel = fileList.selectedValue ?: return
-                        val basePath = project.basePath ?: return
-                        VirtualFileManager.getInstance().findFileByNioPath(Path.of(basePath, rel))
-                            ?.let { FileEditorManager.getInstance(project).openFile(it, true) }
+                        showDiff(rel)
                     }
                 }
             })
@@ -1412,6 +1414,27 @@ class ClaudioTabbedPanel(
                     }
                 }
             )
+        }
+
+        private fun showDiff(rel: String) {
+            val basePath = project.basePath ?: return
+            val vFile = LocalFileSystem.getInstance().findFileByPath("$basePath/$rel") ?: return
+            val headText = try {
+                ProcessBuilder("git", "show", "HEAD:$rel")
+                    .directory(File(basePath))
+                    .start()
+                    .inputStream.readBytes()
+                    .toString(vFile.charset)
+            } catch (_: Exception) { "(new file - not in git)" }
+            val factory = DiffContentFactory.getInstance()
+            val request = SimpleDiffRequest(
+                rel,
+                factory.create(headText),
+                factory.create(project, vFile),
+                "HEAD",
+                "Current"
+            )
+            DiffManager.getInstance().showDiff(project, request, DiffDialogHints.DEFAULT)
         }
     }
 

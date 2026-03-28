@@ -1,3 +1,9 @@
+##### **v0.8.4** (2026-03-28)
+
+**IDE-Native Power Features**
+
+- Inline diff preview - double-click any file in the "Changed Files" panel to open IntelliJ's native diff dialog showing git HEAD vs the current file content
+
 ##### **v0.8.3** (2026-03-28)
 
 **IDE-Native Power Features**

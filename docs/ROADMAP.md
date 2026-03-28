@@ -98,7 +98,7 @@ Deep hooks into IntelliJ's execution model and code model. Things no standalone 
 - [x] "Explain this" right-click action (select any code → "Ask Claude to explain" → injects selection + file context via PSI)
 - [x] Run/test failure injection (when a run configuration fails, offer one-click to send output + stack trace to Claude)
 - [x] TODO/FIXME scan (scan project TODOs via IDE index, inject as a batch into Claude's input)
-- [ ] Inline diff preview before applying (when Claude writes a file, show native IntelliJ diff dialog before the write lands)
+- [x] Inline diff preview before applying (when Claude writes a file, show native IntelliJ diff dialog before the write lands)
 
 ## Principles
 
