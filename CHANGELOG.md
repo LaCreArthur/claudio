@@ -1,3 +1,9 @@
+##### **v0.8.42** (2026-03-28)
+
+**Living Context**
+
+- Live templates to Claude - Tools > Send Live Templates to Claude injects all active live template abbreviations with their descriptions and groups; lets Claude know what code shortcuts you already have so it can reference them in suggestions
+
 ##### **v0.8.41** (2026-03-28)
 
 **Living Context**
