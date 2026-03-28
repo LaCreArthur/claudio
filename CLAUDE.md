@@ -59,6 +59,24 @@ tab.view.sessionState  // StateFlow<NotStarted | Running | Terminated>
 
 **Do NOT use `useBracketedPasteMode()`** -injects text but doesn't submit.
 
+### VFS Change Detection (2025.3)
+
+```kotlin
+project.messageBus.connect(disposable).subscribe(
+    VirtualFileManager.VFS_CHANGES,
+    object : BulkFileListener {
+        override fun after(events: List<VFileEvent>) {
+            for (event in events) {
+                if (event !is VFileContentChangeEvent && event !is VFileCreateEvent) continue
+                // event.path is the absolute path
+            }
+        }
+    }
+)
+```
+
+Use `project.messageBus` (not app messageBus) to scope listener to the project. Pass a `Disposable` to `connect()` to auto-unsubscribe on disposal.
+
 ### Hook Control Plane (primary)
 
 ```

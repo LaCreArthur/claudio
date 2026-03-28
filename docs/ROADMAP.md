@@ -75,7 +75,7 @@ Remaining moat features. Things no terminal or standalone app can touch.
 
 - [x] Gutter action: "Fix with Claude" on error lines
 - [x] Checkpoint list with diff preview (visual rewind)
-- [ ] File change notifications (detect writes - show diff in editor)
+- [x] File change notifications (detect writes - show diff in editor)
 - [ ] CLAUDE.md indicator (show active files, edit from plugin)
 - [ ] MCP server status panel (connected servers, tools, enable/disable)
 - [ ] One-click MCP setup (browse + install servers)

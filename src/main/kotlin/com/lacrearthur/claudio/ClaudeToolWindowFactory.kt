@@ -29,9 +29,15 @@ import org.jetbrains.plugins.terminal.view.TerminalContentChangeEvent
 import org.jetbrains.plugins.terminal.view.TerminalOutputModelListener
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.ui.DialogWrapper
+import com.intellij.openapi.vfs.VirtualFileManager
+import com.intellij.openapi.vfs.newvfs.BulkFileListener
+import com.intellij.openapi.vfs.newvfs.events.VFileContentChangeEvent
+import com.intellij.openapi.vfs.newvfs.events.VFileCreateEvent
+import com.intellij.openapi.vfs.newvfs.events.VFileEvent
 import java.awt.*
 import java.awt.event.*
 import java.io.File
+import java.nio.file.Path
 import javax.swing.*
 
 private val log = Logger.getInstance("Claudio")
@@ -812,8 +818,14 @@ class ClaudioTabbedPanel(
 
     init {
         Disposer.register(parentDisposable, this)
-        val sidebarSplit = JSplitPane(JSplitPane.VERTICAL_SPLIT, SessionHistoryPanel(), CheckpointPanel()).apply {
+        val topSplit = JSplitPane(JSplitPane.VERTICAL_SPLIT, SessionHistoryPanel(), CheckpointPanel()).apply {
             resizeWeight = 0.6
+            dividerSize = 4
+            isContinuousLayout = true
+            border = null
+        }
+        val sidebarSplit = JSplitPane(JSplitPane.VERTICAL_SPLIT, topSplit, ChangedFilesPanel()).apply {
+            resizeWeight = 0.75
             dividerSize = 4
             isContinuousLayout = true
             border = null
@@ -1149,6 +1161,54 @@ class ClaudioTabbedPanel(
                     }
                 } catch (_: Exception) {}
             }
+        }
+    }
+
+    /** Sidebar panel listing files modified during the current session (VFS listener). */
+    private inner class ChangedFilesPanel : JPanel(BorderLayout()) {
+        private val listModel = DefaultListModel<String>()
+        private val fileList = JList(listModel)
+        private val seen = mutableSetOf<String>()
+
+        init {
+            preferredSize = Dimension(220, 0)
+            border = BorderFactory.createMatteBorder(0, 0, 0, 1, UIManager.getColor("Separator.foreground"))
+
+            val header = JLabel("  Changed Files")
+            header.font = MONO_11
+            header.border = BorderFactory.createEmptyBorder(4, 0, 4, 0)
+
+            fileList.font = MONO_11
+            add(header, BorderLayout.NORTH)
+            add(JScrollPane(fileList), BorderLayout.CENTER)
+
+            fileList.addMouseListener(object : MouseAdapter() {
+                override fun mouseClicked(e: MouseEvent) {
+                    if (e.clickCount == 2) {
+                        val rel = fileList.selectedValue ?: return
+                        val basePath = project.basePath ?: return
+                        VirtualFileManager.getInstance().findFileByNioPath(Path.of(basePath, rel))
+                            ?.let { FileEditorManager.getInstance(project).openFile(it, true) }
+                    }
+                }
+            })
+
+            project.messageBus.connect(this@ClaudioTabbedPanel).subscribe(
+                VirtualFileManager.VFS_CHANGES,
+                object : BulkFileListener {
+                    override fun after(events: List<VFileEvent>) {
+                        val basePath = project.basePath ?: return
+                        for (event in events) {
+                            if (event !is VFileContentChangeEvent && event !is VFileCreateEvent) continue
+                            val path = event.path
+                            if (!path.startsWith(basePath)) continue
+                            val rel = path.removePrefix(basePath).trimStart('/')
+                            if (rel.startsWith(".git/") || rel.startsWith("build/") || rel.startsWith("node_modules/")) continue
+                            SwingUtilities.invokeLater { if (seen.add(rel)) listModel.addElement(rel) }
+                        }
+                    }
+                }
+            )
         }
     }
 

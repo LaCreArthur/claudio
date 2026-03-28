@@ -1,3 +1,9 @@
+##### **v0.7.1** (2026-03-28)
+
+**Deep IDE Integration**
+
+- File change notifications - a "Changed Files" panel in the sidebar lists every file modified during the current session; double-click any entry to open the file in the editor
+
 ##### **v0.7.0** (2026-03-28)
 
 **Deep IDE Integration**
