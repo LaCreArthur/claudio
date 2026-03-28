@@ -1,3 +1,9 @@
+##### **v0.8.37** (2026-03-28)
+
+**Living Context**
+
+- Active breakpoints to Claude - Tools > Send Breakpoints to Claude injects all XDebugger breakpoints with file:line, enabled state, and condition expressions; shows disabled breakpoints too so Claude has the full debug configuration picture
+
 ##### **v0.8.36** (2026-03-28)
 
 **IDE Integration**

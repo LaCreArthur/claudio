@@ -1,6 +1,6 @@
 # Roadmap
 
-**Updated:** 2026-03-27
+**Updated:** 2026-03-28
 
 ## Vision
 
@@ -152,6 +152,17 @@ The IDE knows the full history and shape of your code - who changed what, what i
 - [x] Quick Documentation injection - when the Quick Documentation popup is open (F1 / hover), a "Send to Claude" button injects the rendered KDoc/Javadoc for the symbol via `DocumentationManager.getProviders()`; closes the gap vs Copilot Chat's "explain this API" feature (evidence: Copilot Chat has inline doc explanation; DocumentationManager is IDE-only; moat: high; effort: small)
 - [x] Class/interface hierarchy to Claude - "Send Hierarchy to Claude" on any class or interface injects the full implementation tree via `ClassInheritorsSearch` / `InheritorsSearch`; lets Claude see all implementors before suggesting interface changes (evidence: Cursor shows class hierarchy in context; PSI InheritorsSearch is IDE-only; moat: very high; effort: medium)
 - [x] Search Everywhere integration - register a Claudio contributor in Shift+Shift that turns any typed query into a prompt sent to the active Claude session; surfaces Claudio as a first-class IDE citizen alongside files, actions, and symbols (evidence: JetBrains SearchEverywhereContributor API; Copilot does this in VS Code Ctrl+I; moat: high - distribution + discoverability; effort: medium)
+
+## Phase 13: Living Context
+
+The IDE has a real-time picture of your session that no terminal can reconstruct: what breakpoints are set, what you wrote in scratchpads, what the last process printed, what the IDE itself just warned you about. Ship the features that turn the current moment into instant Claude context.
+
+- [x] Active breakpoints to Claude - "Send Breakpoints to Claude" injects all active breakpoints (file, line, condition, enabled state) via `XBreakpointManager`; gives Claude the full picture of what you're watching before asking "why does this crash here" (evidence: natural complement to shipped debugger context; XBreakpointManager is IDE-only; moat: very high; effort: small)
+- [ ] Call hierarchy to Claude - right-click any method → "Send Call Hierarchy to Claude" injects all callers recursively via `CallHierarchyBrowser` / `PsiElement.callHierarchy`; answers "what breaks if I change this signature" before refactoring (evidence: complements Phase 12 Find Usages - usages show where, call hierarchy shows who calls in what order; PSI-level, no terminal equivalent; moat: very high; effort: medium)
+- [ ] Scratch file to Claude - a "Send Scratch to Claude" action in the Scratches tool window injects the full content of the selected scratch file via `ScratchFileService.getScratchRootType()`; scratch files are where developers prototype ideas and write ephemeral notes, making them natural Claude context (evidence: ScratchFileService is IDE-only; no terminal equivalent for IDE scratch concept; moat: high; effort: small)
+- [ ] IDE notification log to Claude - "Send Recent Notifications to Claude" injects the last N IDE notifications from `NotificationsManager.getNotifications()`; answers "why did that just happen" for cryptic IDE warnings, Gradle sync failures, and plugin alerts without any copy-paste (evidence: NotificationsManager is IDE-only; top user pain is "what does this IDE warning mean"; moat: high; effort: small)
+- [ ] Last run output to Claude - "Send Last Run Output to Claude" captures the most recent process output from `ExecutionManager` / `RunContentManager` without requiring a failure; lets Claude see what the app printed before the user even asks a question (evidence: complements Phase 7 failure injection - that requires failure, this works on success too; RunContentManager is IDE-only; moat: high; effort: medium)
+- [ ] Live templates to Claude - "Send Live Templates to Claude" injects the user's custom live template snippets via `TemplateManager.allTemplates`; lets Claude understand which shortcuts the developer already has so it can reference them in suggestions instead of writing boilerplate (evidence: TemplateManager is IDE-only; Copilot has no awareness of user-defined snippets; moat: high; effort: small)
 
 ## Principles
 

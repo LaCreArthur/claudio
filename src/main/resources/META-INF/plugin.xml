@@ -165,6 +165,13 @@
             <add-to-group group-id="ToolsMenu" anchor="last"/>
         </action>
 
+        <action id="com.lacrearthur.claudio.SendBreakpointsAction"
+                class="com.lacrearthur.claudio.SendBreakpointsAction"
+                text="Send Breakpoints to Claude"
+                description="Inject all active XDebugger breakpoints with file:line, enabled state, and condition expressions into the Claudio input bar">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
+
         <action id="com.lacrearthur.claudio.SendDiffToClaudeAction"
                 class="com.lacrearthur.claudio.SendDiffToClaudeAction"
                 text="Send Uncommitted Diff to Claude"
