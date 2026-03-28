@@ -165,6 +165,14 @@
             <add-to-group group-id="ToolsMenu" anchor="last"/>
         </action>
 
+        <action id="com.lacrearthur.claudio.SendFoldingMapAction"
+                class="com.lacrearthur.claudio.SendFoldingMapAction"
+                text="Send Folding Map to Claude"
+                description="Inject all currently collapsed code regions (line ranges and placeholder text) into the Claudio input bar; shows Claude which parts of the file you consider noise vs implementation details">
+            <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="com.lacrearthur.claudio.SendCallHierarchyAction"/>
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
+
         <action id="com.lacrearthur.claudio.SendCurrentFileAction"
                 class="com.lacrearthur.claudio.SendCurrentFileAction"
                 text="Send Current File to Claude"

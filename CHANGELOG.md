@@ -1,3 +1,9 @@
+##### **v0.8.48** (2026-03-28)
+
+**Developer Awareness**
+
+- Code folding map - right-click in any editor and choose "Send Folding Map to Claude" to inject all currently collapsed code regions with their line ranges and placeholder text; shows Claude which parts of the file you consider noise or implementation details
+
 ##### **v0.8.47** (2026-03-28)
 
 **Developer Awareness**
