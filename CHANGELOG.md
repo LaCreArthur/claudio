@@ -1,3 +1,9 @@
+##### **v0.8.27** (2026-03-28)
+
+**IDE Intelligence**
+
+- Module dependency graph to Claude - Tools > Send Module Graph to Claude injects the full project module dependency tree (up to 50 modules) as a formatted list; shows which modules depend on which so Claude understands multi-module project structure instantly
+
 ##### **v0.8.26** (2026-03-28)
 
 **IDE Intelligence**

@@ -157,5 +157,12 @@
                 description="Inject classes with less than 80% line coverage into the Claudio input bar">
             <add-to-group group-id="ToolsMenu" anchor="last"/>
         </action>
+
+        <action id="com.lacrearthur.claudio.SendModuleGraphAction"
+                class="com.lacrearthur.claudio.SendModuleGraphAction"
+                text="Send Module Graph to Claude"
+                description="Inject the project module dependency tree into the Claudio input bar">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
     </actions>
 </idea-plugin>
