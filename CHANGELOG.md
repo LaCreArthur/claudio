@@ -1,3 +1,9 @@
+##### **v0.8.21** (2026-03-28)
+
+**VCS + Code Intelligence**
+
+- Send uncommitted diff to Claude - click the ⎇ button in the toolbar (or use Tools > Send Uncommitted Diff to Claude) to inject the full staged + unstaged git diff into the input bar; diff is truncated at 100 lines with a note if it exceeds that
+
 ##### **v0.8.20** (2026-03-28)
 
 **Input Superpowers**

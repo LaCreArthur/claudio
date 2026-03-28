@@ -1095,12 +1095,22 @@ class ClaudioTabbedPanel(
             }
         }
 
+        val diffBtn = JButton("⎇").apply {
+            font = MONO_11
+            toolTipText = "Send uncommitted diff to Claude"
+            isFocusable = false
+            isContentAreaFilled = false
+            isBorderPainted = false
+            addActionListener { SendDiffToClaudeAction.perform(project) }
+        }
+
         val toolbar = JPanel(FlowLayout(FlowLayout.LEFT, 4, 2)).apply {
             add(newSessionBtn)
             add(modelBox)
             add(presetBtn)
             add(settingsBtn)
             add(addDirBtn)
+            add(diffBtn)
         }
 
         val centerWrapper = JPanel(BorderLayout()).apply {

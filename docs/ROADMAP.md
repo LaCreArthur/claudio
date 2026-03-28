@@ -122,6 +122,16 @@ The terminal can't paste images, handle drag-and-drop, or remember what you allo
 - [x] Debugger variable snapshot - extend debugger context injection to include visible local variables from the XDebugger variable tree at the breakpoint (evidence: Cursor does this; moat: very high - XDebugger API only; effort: large)
 - [x] /add-dir directory picker - a native "Add Directory" button in the toolbar opens a folder chooser and types `/add-dir <path>` into the input bar (evidence: issue #36123; moat: low-medium - removes CLI friction; effort: small)
 
+## Phase 10: VCS + Code Intelligence
+
+The IDE's code model and version control awareness are things no terminal will ever have. Ship the features that exploit them.
+
+- [x] Send uncommitted diff to Claude - a "Send Diff" button (or right-click in the Changes panel) injects the full working tree diff via `GitChangeListManager`; lets Claude review pending changes without manual `git diff` copy-paste (evidence: issue #35814 native IDE integration; moat: high - VCS API works for all VCS, not just git; effort: small)
+- [ ] Library class / JAR source to Claude - right-click any external library class (e.g. in the Project view → External Libraries) → "Send to Claude" injects the decompiled source via PSI/`JavaDecompilerService`; closes the gap vs Gemini Code Assist (evidence: issue #29117 - Gemini can, Claude can't; moat: very high - PSI decompilation is IDE-only; effort: medium)
+- [ ] Editor bookmarks to Claude - "Send Bookmarks to Claude" action injects all bookmarked file:line locations as a numbered list; bookmarks represent the developer's focus points and annotated TODOs (evidence: BookmarkManager is IDE-only with no terminal equivalent; moat: high; effort: small)
+- [ ] Run configuration context - right-click any run configuration → "Send to Claude" injects the config name, type, and effective command line; lets Claude understand exactly how the project runs before giving advice (evidence: RunManager API is IDE-only; natural "explain how to run this" workflow; moat: high; effort: small)
+- [ ] Coverage gaps to Claude - after running with coverage, a "Send Uncovered Methods" action reads `CoverageDataManager` and injects methods with zero or partial line coverage; natural trigger for "write tests for these" requests (evidence: CoverageSuite is IDE-only, no terminal equivalent; moat: very high; effort: medium)
+
 ## Principles
 
 - **Lean into the IDE.** Build what standalone tools can't.

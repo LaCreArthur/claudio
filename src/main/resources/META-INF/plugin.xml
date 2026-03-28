@@ -129,5 +129,12 @@
             <add-to-group group-id="XDebugger.ToolWindow.TopToolbar" anchor="last"/>
             <add-to-group group-id="ToolsMenu" anchor="last"/>
         </action>
+
+        <action id="com.lacrearthur.claudio.SendDiffToClaudeAction"
+                class="com.lacrearthur.claudio.SendDiffToClaudeAction"
+                text="Send Uncommitted Diff to Claude"
+                description="Inject the full uncommitted git diff into the Claudio input bar">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
     </actions>
 </idea-plugin>
