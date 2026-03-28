@@ -1,3 +1,9 @@
+##### **v0.8.47** (2026-03-28)
+
+**Developer Awareness**
+
+- Branch and stash snapshot - Tools > Send Branch Snapshot to Claude injects the current branch, last 10 branches by commit date, and all stash entries; essential context before asking Claude to help with merges, rebases, or "what was I working on"
+
 ##### **v0.8.46** (2026-03-28)
 
 **Developer Awareness**

@@ -301,5 +301,12 @@
                 description="Inject all active live template abbreviations with their descriptions and groups into the Claudio input bar so Claude knows what code shortcuts you already have">
             <add-to-group group-id="ToolsMenu" anchor="last"/>
         </action>
+
+        <action id="com.lacrearthur.claudio.SendBranchSnapshotAction"
+                class="com.lacrearthur.claudio.SendBranchSnapshotAction"
+                text="Send Branch Snapshot to Claude"
+                description="Inject current branch, last 10 branches by commit date, and all stash entries into the Claudio input bar; essential context before asking Claude to help with merges, rebases, or recovering lost work">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
     </actions>
 </idea-plugin>
