@@ -119,6 +119,18 @@ Parser is emergency fallback only. No hook equivalent for AskUserQuestion yet.
 | 2025.1.x | `2.1.10` | bundled | `intellijIdea("2025.1.x")` |
 | 2024.3.x | `2.0.21` | bundled | `intellijIdeaCommunity("2024.3.x")` |
 
+**Adding platform modules (not plugins) to compile classpath:**
+```groovy
+// Run ./gradlew printBundledModules to list all available module names
+dependencies {
+    intellijPlatform {
+        bundledModule('intellij.platform.coverage')       // CoverageDataManager
+        bundledModule('intellij.platform.coverage.agent') // ProjectData / ClassData / LineData
+    }
+}
+```
+Use `./gradlew printBundledModules` to discover available module names. Platform modules live in `lib/modules/` and are NOT on the compile classpath by default.
+
 **Rules:**
 - `intellijIdeaCommunity()` is deprecated for 2025.3+ -use `intellijIdea()`
 - Always add `bundledPlugin("org.jetbrains.plugins.terminal")` for TerminalView API
@@ -168,6 +180,13 @@ pkill -f Rider && sleep 2 && open -a Rider
 - Never use `ExistingIdeInstaller` with extracted `Contents/` directories
 - Never mix 3 problem classes in one debug pass: (1) JetBrains contract, (2) macOS signing, (3) plugin logic
 - Never chase "does the lambda run?" for more than one proof cycle - a sentinel `assertTrue(blockExecuted)` is definitive
+
+### VCS annotation API (FileAnnotation)
+`FileAnnotation` only exposes:
+- `getLineRevisionNumber(lineIndex: Int): VcsRevisionNumber?`
+- `getToolTip(lineIndex: Int): String?`
+There is no `getLineAuthor()` or `getLineDate()`. Extract author/date from tooltip string if needed.
+Always call `annotation.dispose()` after reading (FileAnnotation implements Disposable).
 
 ### Bad patterns (wasted cycles on these)
 - "53s for 4 tests = fake run" - WRONG. Starter uses warm IDE cache after first download. Speed is not evidence.

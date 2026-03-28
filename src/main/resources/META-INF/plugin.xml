@@ -150,5 +150,12 @@
                 description="Inject all run configurations (name, type, parameters) into the Claudio input bar">
             <add-to-group group-id="ToolsMenu" anchor="last"/>
         </action>
+
+        <action id="com.lacrearthur.claudio.SendCoverageGapsAction"
+                class="com.lacrearthur.claudio.SendCoverageGapsAction"
+                text="Send Coverage Gaps to Claude"
+                description="Inject classes with less than 80% line coverage into the Claudio input bar">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
     </actions>
 </idea-plugin>

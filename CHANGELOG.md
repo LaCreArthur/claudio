@@ -1,3 +1,9 @@
+##### **v0.8.25** (2026-03-28)
+
+**VCS + Code Intelligence**
+
+- Coverage gaps to Claude - Tools > Send Coverage Gaps to Claude reads active coverage data via `CoverageDataManager` and injects all classes with less than 80% line coverage as a sorted list; run tests with coverage first, then click to send gaps to Claude for test generation
+
 ##### **v0.8.24** (2026-03-28)
 
 **VCS + Code Intelligence**
