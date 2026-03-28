@@ -125,11 +125,19 @@
             <add-to-group group-id="ToolsMenu" anchor="last"/>
         </action>
 
+        <action id="com.lacrearthur.claudio.SendInlayHintsAction"
+                class="com.lacrearthur.claudio.SendInlayHintsAction"
+                text="Send Inlay Hints to Claude"
+                description="Read the IDE's type inference inlay hints near the caret (+-10 lines) and inject them into the Claudio input bar so Claude sees the inferred types the IDE adds automatically">
+            <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="com.lacrearthur.claudio.SendParameterInfoAction"/>
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
+
         <action id="com.lacrearthur.claudio.SendUsagesAction"
                 class="com.lacrearthur.claudio.SendUsagesAction"
                 text="Send Usages to Claude"
                 description="Run project-scope Find Usages on the symbol at caret and inject up to 50 usage sites as file:line references into the Claudio input bar">
-            <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="com.lacrearthur.claudio.SendParameterInfoAction"/>
+            <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="com.lacrearthur.claudio.SendInlayHintsAction"/>
             <add-to-group group-id="ToolsMenu" anchor="last"/>
         </action>
 

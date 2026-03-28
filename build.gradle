@@ -7,7 +7,7 @@ plugins {
 }
 
 group = 'com.lacrearthur.claudio'
-version = '0.8.44'
+version = '0.8.45'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_21

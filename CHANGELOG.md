@@ -1,3 +1,9 @@
+##### **v0.8.45** (2026-03-28)
+
+**Developer Awareness**
+
+- Inlay hints at caret - right-click or use Tools > Send Inlay Hints to Claude to inject the IDE's type inference annotations near the cursor (+-10 lines); includes the invisible type hints the IDE displays inline so Claude sees inferred types without you writing them out
+
 ##### **v0.8.44** (2026-03-28)
 
 **Developer Awareness**
