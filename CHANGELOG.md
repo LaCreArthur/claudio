@@ -1,3 +1,9 @@
+##### **v0.7.2** (2026-03-28)
+
+**Deep IDE Integration**
+
+- CLAUDE.md indicator - the History sidebar now shows all active CLAUDE.md files at the top (project root, parent directories, global ~/.claude/CLAUDE.md); click any entry to open it in the editor
+
 ##### **v0.7.1** (2026-03-28)
 
 **Deep IDE Integration**

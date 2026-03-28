@@ -28,7 +28,9 @@ import kotlinx.coroutines.withTimeout
 import org.jetbrains.plugins.terminal.view.TerminalContentChangeEvent
 import org.jetbrains.plugins.terminal.view.TerminalOutputModelListener
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.ui.DialogWrapper
+import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.openapi.vfs.newvfs.BulkFileListener
 import com.intellij.openapi.vfs.newvfs.events.VFileContentChangeEvent
@@ -970,10 +972,6 @@ class ClaudioTabbedPanel(
             preferredSize = Dimension(220, 0)
             border = BorderFactory.createMatteBorder(0, 0, 0, 1, UIManager.getColor("Separator.foreground"))
 
-            val header = JLabel("  History")
-            header.font = MONO_11
-            header.border = BorderFactory.createEmptyBorder(4, 0, 4, 0)
-
             sessionList.font = MONO_11
             sessionList.cellRenderer = object : DefaultListCellRenderer() {
                 override fun getListCellRendererComponent(
@@ -988,8 +986,17 @@ class ClaudioTabbedPanel(
                 }
             }
 
-            add(header, BorderLayout.NORTH)
-            add(JScrollPane(sessionList), BorderLayout.CENTER)
+            val header = JLabel("  History").apply {
+                font = MONO_11
+                border = BorderFactory.createEmptyBorder(4, 0, 4, 0)
+            }
+            val historySection = JPanel(BorderLayout()).apply {
+                add(header, BorderLayout.NORTH)
+                add(JScrollPane(sessionList), BorderLayout.CENTER)
+            }
+
+            add(buildClaudemdIndicator(), BorderLayout.NORTH)
+            add(historySection, BorderLayout.CENTER)
 
             sessionList.addMouseListener(object : MouseAdapter() {
                 override fun mouseClicked(e: MouseEvent) {
@@ -1044,6 +1051,57 @@ class ClaudioTabbedPanel(
                     } ?: "(no message)"
                 }
             } catch (_: Exception) { "(unreadable)" }
+        }
+
+        private fun findClaudemdFiles(): List<String> {
+            val results = mutableListOf<String>()
+            val home = System.getProperty("user.home")
+            var dir: File? = project.basePath?.let { File(it) }
+            while (dir != null && dir.absolutePath.startsWith(home)) {
+                val candidate = File(dir, "CLAUDE.md")
+                if (candidate.exists()) results.add(candidate.absolutePath)
+                dir = dir.parentFile
+            }
+            val global = File(home, ".claude/CLAUDE.md")
+            if (global.exists() && !results.contains(global.absolutePath)) results.add(global.absolutePath)
+            return results
+        }
+
+        private fun buildClaudemdIndicator(): JPanel {
+            val panel = JPanel().apply {
+                layout = BoxLayout(this, BoxLayout.Y_AXIS)
+                border = BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor("Separator.foreground")),
+                    BorderFactory.createEmptyBorder(4, 4, 4, 4),
+                )
+            }
+            panel.add(JLabel("  CLAUDE.md").apply { font = MONO_11 })
+            val home = System.getProperty("user.home")
+            val files = findClaudemdFiles()
+            if (files.isEmpty()) {
+                panel.add(JLabel("  (none found)").apply { font = MONO_11; foreground = Color.GRAY })
+            } else {
+                for (path in files) {
+                    val rel = when {
+                        path.startsWith(project.basePath ?: "\u0000") -> "./" + path.removePrefix(project.basePath!!).trimStart('/')
+                        path.startsWith(home) -> "~/" + path.removePrefix(home).trimStart('/')
+                        else -> path
+                    }
+                    panel.add(JLabel("  \u2514 $rel").apply {
+                        font = MONO_11
+                        cursor = Cursor(Cursor.HAND_CURSOR)
+                        toolTipText = path
+                        foreground = UIManager.getColor("Link.activeForeground") ?: Color(100, 150, 255)
+                        addMouseListener(object : MouseAdapter() {
+                            override fun mouseClicked(e: MouseEvent) {
+                                val vf = LocalFileSystem.getInstance().findFileByPath(path) ?: return
+                                OpenFileDescriptor(project, vf).navigate(true)
+                            }
+                        })
+                    })
+                }
+            }
+            return panel
         }
     }
 

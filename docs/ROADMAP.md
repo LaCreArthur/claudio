@@ -57,8 +57,8 @@ Pull the moat features forward. `@file` and error injection are what make this b
 
 Turn tabs into purpose-built agents (Roo-killer). Show what they cost.
 
-- [ ] Agent presets (named configs: system prompt, permission mode, working directory, model)
-- [ ] One-click launch: "Backend Agent", "Review Agent", "Test Agent"
+- [x] Agent presets (named configs: system prompt, permission mode, working directory, model)
+- [x] One-click launch: "Backend Agent", "Review Agent", "Test Agent"
 - [x] Sticky model per preset (Architect uses reasoning model, Code uses fast one)
 
 ### Agent presets - sub-items
@@ -76,7 +76,7 @@ Remaining moat features. Things no terminal or standalone app can touch.
 - [x] Gutter action: "Fix with Claude" on error lines
 - [x] Checkpoint list with diff preview (visual rewind)
 - [x] File change notifications (detect writes - show diff in editor)
-- [ ] CLAUDE.md indicator (show active files, edit from plugin)
+- [x] CLAUDE.md indicator (show active files, edit from plugin)
 - [ ] MCP server status panel (connected servers, tools, enable/disable)
 - [ ] One-click MCP setup (browse + install servers)
 
