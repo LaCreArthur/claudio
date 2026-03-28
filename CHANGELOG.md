@@ -1,3 +1,9 @@
+##### **v0.6.5** (2026-03-28)
+
+**Multi-Session**
+
+- Resume session - double-click any entry in the History sidebar to resume that session via `claude --resume <id>`
+
 ##### **v0.6.4** (2026-03-28)
 
 **Multi-Session**

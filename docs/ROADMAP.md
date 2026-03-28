@@ -51,7 +51,7 @@ Pull the moat features forward. `@file` and error injection are what make this b
 - [x] Multi-tab chat (each tab = independent claude instance)
 - [x] Tab naming (double-click to rename inline)
 - [x] Session history sidebar (read ~/.claude/ history, show with timestamps + preview)
-- [ ] Resume previous sessions from history
+- [x] Resume previous sessions from history
 
 ## Phase 4: Agent Presets + Usage Analytics
 

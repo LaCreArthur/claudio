@@ -36,7 +36,7 @@ import javax.swing.*
 private val log = Logger.getInstance("Claudio")
 private val MONO_11 = Font("JetBrains Mono", Font.PLAIN, 11)
 
-private data class SessionEntry(val preview: String, val timestamp: String)
+private data class SessionEntry(val preview: String, val timestamp: String, val sessionId: String)
 
 class ClaudeToolWindowFactory : ToolWindowFactory, DumbAware {
     override suspend fun isApplicableAsync(project: Project): Boolean = true
@@ -586,6 +586,10 @@ class ClaudioTabbedPanel(
         (tabbedPane.selectedComponent as? ClaudePanel)?.appendToInput(text)
     }
 
+    fun sendText(text: String) {
+        (tabbedPane.selectedComponent as? ClaudePanel)?.sendText(text)
+    }
+
     override fun dispose() {}
 
     /** Tab label with inline rename on double-click. */
@@ -661,6 +665,15 @@ class ClaudioTabbedPanel(
             add(header, BorderLayout.NORTH)
             add(JScrollPane(sessionList), BorderLayout.CENTER)
 
+            sessionList.addMouseListener(object : MouseAdapter() {
+                override fun mouseClicked(e: MouseEvent) {
+                    if (e.clickCount == 2) {
+                        val entry = sessionList.selectedValue ?: return
+                        sendText("claude --resume ${entry.sessionId}")
+                    }
+                }
+            })
+
             ApplicationManager.getApplication().executeOnPooledThread { loadSessions() }
         }
 
@@ -674,7 +687,7 @@ class ClaudioTabbedPanel(
                 .sortedByDescending { it.second }
                 .take(20)
                 .map { (file, mtime) ->
-                    SessionEntry(extractFirstUserMessage(file), fmt.format(java.util.Date(mtime)))
+                    SessionEntry(extractFirstUserMessage(file), fmt.format(java.util.Date(mtime)), file.nameWithoutExtension)
                 }
                 .toList()
             SwingUtilities.invokeLater { listModel.clear(); entries.forEach { listModel.addElement(it) } }
