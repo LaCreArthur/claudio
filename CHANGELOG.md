@@ -1,3 +1,9 @@
+##### **v0.8.3** (2026-03-28)
+
+**IDE-Native Power Features**
+
+- TODO/FIXME scan - Tools menu now has "Send TODOs to Claude"; scans the entire project via the IDE index and injects all TODO/FIXME items with file:line references into Claudio's input bar (capped at 50)
+
 ##### **v0.8.2** (2026-03-28)
 
 **IDE-Native Power Features**

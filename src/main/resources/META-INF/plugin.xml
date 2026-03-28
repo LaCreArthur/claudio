@@ -97,5 +97,12 @@
                 description="Send selected code to Claudio for explanation">
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
         </action>
+
+        <action id="com.lacrearthur.claudio.SendTodosAction"
+                class="com.lacrearthur.claudio.SendTodosAction"
+                text="Send TODOs to Claude"
+                description="Collect all project TODO/FIXME items and send them to Claudio">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
     </actions>
 </idea-plugin>
