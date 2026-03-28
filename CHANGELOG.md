@@ -1,3 +1,9 @@
+##### **v0.8.31** (2026-03-28)
+
+**Code Archaeology**
+
+- Quick Documentation to Claude - right-click any symbol in the editor and choose "Send Documentation to Claude"; Claudio injects the KDoc/Javadoc for the symbol at the caret position stripped of HTML; works for all IDE-supported languages via DocumentationManager
+
 ##### **v0.8.30** (2026-03-28)
 
 **IDE Intelligence**

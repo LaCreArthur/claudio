@@ -142,6 +142,17 @@ Exploit the IDE's live code model and project graph - things no terminal will ev
 - [x] Recent editor files context - "Send Recent Files to Claude" injects the last N files opened via `EditorHistoryManager.fileList`; useful as a "here's what I've been working on" context burst (evidence: EditorHistoryManager is IDE-only; natural context for architecture questions; moat: medium-high; effort: small)
 - [x] Gradle/Maven task list injection - "Send Build Tasks to Claude" injects all available Gradle/Maven tasks via `ExternalSystemUtil` / `MavenProjectsManager`; lets Claude know exactly what build targets exist before giving run advice (evidence: issue #35814 "project structure"; moat: medium-high - ExternalSystemUtil is IDE-only; effort: small-medium)
 
+## Phase 12: Code Archaeology
+
+The IDE knows the full history and shape of your code - who changed what, what implements what, where everything is called from. Ship the features that turn that knowledge into instant Claude context, no copy-paste required.
+
+- [ ] VCS selection history - right-click any selection in the editor → "Send History to Claude" injects the git log + diffs for the selected line range via `VcsHistoryProvider` and `git log -L`; answers "when did this break and who touched it" without leaving the IDE (evidence: natural extension of shipped git blame; JetBrains VCS API covers all VCS not just git; moat: high; effort: small)
+- [ ] Find Usages to Claude - after running Find Usages, a "Send Usages to Claude" gutter/context action injects all found usage sites as file:line references; lets Claude understand the full call graph for a symbol before suggesting a refactor (evidence: Cursor has "find all references" in chat context; IntelliJ FindUsagesManager is IDE-only AST-level; moat: very high; effort: medium)
+- [ ] Test run history - "Send Test History to Claude" injects the last N test runs from `TestHistoryManager` with pass/fail counts, durations, and failure messages; natural trigger for "why are these tests flaky" or "write tests to cover these failures" (evidence: TestHistoryManager is IDE-only; no terminal equivalent for structured test result history; moat: high; effort: small)
+- [x] Quick Documentation injection - when the Quick Documentation popup is open (F1 / hover), a "Send to Claude" button injects the rendered KDoc/Javadoc for the symbol via `DocumentationManager.getProviders()`; closes the gap vs Copilot Chat's "explain this API" feature (evidence: Copilot Chat has inline doc explanation; DocumentationManager is IDE-only; moat: high; effort: small)
+- [ ] Class/interface hierarchy to Claude - "Send Hierarchy to Claude" on any class or interface injects the full implementation tree via `ClassInheritorsSearch` / `InheritorsSearch`; lets Claude see all implementors before suggesting interface changes (evidence: Cursor shows class hierarchy in context; PSI InheritorsSearch is IDE-only; moat: very high; effort: medium)
+- [ ] Search Everywhere integration - register a Claudio contributor in Shift+Shift that turns any typed query into a prompt sent to the active Claude session; surfaces Claudio as a first-class IDE citizen alongside files, actions, and symbols (evidence: JetBrains SearchEverywhereContributor API; Copilot does this in VS Code Ctrl+I; moat: high - distribution + discoverability; effort: medium)
+
 ## Principles
 
 - **Lean into the IDE.** Build what standalone tools can't.

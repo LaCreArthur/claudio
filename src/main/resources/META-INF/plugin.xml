@@ -98,6 +98,14 @@
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
         </action>
 
+        <action id="com.lacrearthur.claudio.SendDocumentationAction"
+                class="com.lacrearthur.claudio.SendDocumentationAction"
+                text="Send Documentation to Claude"
+                description="Fetch KDoc/Javadoc for the symbol at caret and inject it into the Claudio input bar">
+            <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="com.lacrearthur.claudio.ExplainWithClaudeAction"/>
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
+
         <action id="com.lacrearthur.claudio.SendCurrentFileAction"
                 class="com.lacrearthur.claudio.SendCurrentFileAction"
                 text="Send Current File to Claude"
