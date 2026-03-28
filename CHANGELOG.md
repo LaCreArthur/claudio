@@ -1,3 +1,9 @@
+##### **v0.8.18** (2026-03-28)
+
+**Input Superpowers**
+
+- Drag-and-drop files to input bar - drag any file from the Project tree, Finder, or anywhere into the Claudio input bar to insert `@relative/path` as context; regular text drag-and-drop still works normally
+
 ##### **v0.8.17** (2026-03-28)
 
 **Input Superpowers**

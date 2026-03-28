@@ -880,6 +880,31 @@ class ClaudePanel(
             }
         })
 
+        // Drag-and-drop files into input bar → inserts @relative/path as context
+        val defaultTransferHandler = inputArea.transferHandler
+        inputArea.transferHandler = object : TransferHandler() {
+            override fun canImport(support: TransferSupport): Boolean =
+                support.isDataFlavorSupported(DataFlavor.javaFileListFlavor) ||
+                defaultTransferHandler?.canImport(support) == true
+
+            override fun importData(support: TransferSupport): Boolean {
+                if (support.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
+                    try {
+                        @Suppress("UNCHECKED_CAST")
+                        val files = support.transferable.getTransferData(DataFlavor.javaFileListFlavor) as List<File>
+                        val basePath = project.basePath ?: ""
+                        val refs = files.joinToString(" ") { f ->
+                            val rel = f.absolutePath.removePrefix(basePath).trimStart('/')
+                            "@$rel"
+                        }
+                        appendToInput(" $refs")
+                        return true
+                    } catch (_: Exception) {}
+                }
+                return defaultTransferHandler?.importData(support) ?: false
+            }
+        }
+
         val scroll = JScrollPane(inputArea)
         scroll.preferredSize = Dimension(0, 72)
         scroll.border = BorderFactory.createEmptyBorder()
