@@ -1,3 +1,9 @@
+##### **v0.8.24** (2026-03-28)
+
+**VCS + Code Intelligence**
+
+- Library class / JAR source to Claude - right-click any class under "External Libraries" in the Project view and choose "Send to Claude"; Claudio injects the decompiled source via IntelliJ's PSI (Fernflower decompiler); truncated at 200 lines for large classes
+
 ##### **v0.8.23** (2026-03-28)
 
 **VCS + Code Intelligence**
