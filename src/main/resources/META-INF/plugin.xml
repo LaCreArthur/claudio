@@ -109,11 +109,19 @@
             <add-to-group group-id="ToolsMenu" anchor="last"/>
         </action>
 
+        <action id="com.lacrearthur.claudio.SendFileHistoryAction"
+                class="com.lacrearthur.claudio.SendFileHistoryAction"
+                text="Send File History to Claude"
+                description="Run git log on the current file and inject the last 20 commits into the Claudio input bar; useful for architecture questions or understanding how a file evolved">
+            <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="com.lacrearthur.claudio.SendVcsSelectionHistoryAction"/>
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
+
         <action id="com.lacrearthur.claudio.SendDocumentationAction"
                 class="com.lacrearthur.claudio.SendDocumentationAction"
                 text="Send Documentation to Claude"
                 description="Fetch KDoc/Javadoc for the symbol at caret and inject it into the Claudio input bar">
-            <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="com.lacrearthur.claudio.SendVcsSelectionHistoryAction"/>
+            <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="com.lacrearthur.claudio.SendFileHistoryAction"/>
             <add-to-group group-id="ToolsMenu" anchor="last"/>
         </action>
 

@@ -1,3 +1,9 @@
+##### **v0.8.46** (2026-03-28)
+
+**Developer Awareness**
+
+- Full file history to Claude - right-click in any editor and choose "Send File History to Claude" to inject the last 20 git commits touching the current file; useful for architecture questions or understanding how a file evolved over time
+
 ##### **v0.8.45** (2026-03-28)
 
 **Developer Awareness**
