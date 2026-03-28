@@ -1,3 +1,9 @@
+##### **v0.8.22** (2026-03-28)
+
+**VCS + Code Intelligence**
+
+- Send Bookmarks to Claude - Tools > Send Bookmarks to Claude injects all editor bookmarks as a numbered file:line list; bookmarks with descriptions include them in parentheses; shows a notification if no bookmarks are set
+
 ##### **v0.8.21** (2026-03-28)
 
 **VCS + Code Intelligence**
