@@ -1,3 +1,9 @@
+##### **v0.8.20** (2026-03-28)
+
+**Input Superpowers**
+
+- /add-dir directory picker - click the 📁 button in the toolbar to open a native folder picker; selecting a directory inserts `/add-dir <path>` into the input bar so you can expand Claude's working context without typing paths manually
+
 ##### **v0.8.19** (2026-03-28)
 
 **Input Superpowers**

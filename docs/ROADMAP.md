@@ -120,7 +120,7 @@ The terminal can't paste images, handle drag-and-drop, or remember what you allo
 - [x] Drag-and-drop files to input bar - drag any file from the Project view into the input bar to insert `@filepath` as context (evidence: issue #35814 requests this as a "native experience" feature; moat: medium - requires JetBrains DnD API; effort: medium)
 - [x] Persistent "Always Allow" per project - add a "Remember for this project" checkbox to permission dialogs; approved commands saved to `~/.claudio/allowlist/<project-hash>.json` and auto-allowed on future requests (evidence: issue #38795 - repeated approvals are top user pain; moat: high - our hook dialogs own the flow; effort: small)
 - [x] Debugger variable snapshot - extend debugger context injection to include visible local variables from the XDebugger variable tree at the breakpoint (evidence: Cursor does this; moat: very high - XDebugger API only; effort: large)
-- [ ] /add-dir directory picker - a native "Add Directory" button in the toolbar opens a folder chooser and types `/add-dir <path>` into the input bar (evidence: issue #36123; moat: low-medium - removes CLI friction; effort: small)
+- [x] /add-dir directory picker - a native "Add Directory" button in the toolbar opens a folder chooser and types `/add-dir <path>` into the input bar (evidence: issue #36123; moat: low-medium - removes CLI friction; effort: small)
 
 ## Principles
 

@@ -1078,11 +1078,29 @@ class ClaudioTabbedPanel(
             }
         }
 
+        val addDirBtn = JButton("📁").apply {
+            font = MONO_11
+            toolTipText = "Add directory - opens a folder picker and inserts /add-dir <path> into the input bar"
+            isFocusable = false
+            isContentAreaFilled = false
+            isBorderPainted = false
+            addActionListener {
+                val chooser = JFileChooser(project.basePath).apply {
+                    fileSelectionMode = JFileChooser.DIRECTORIES_ONLY
+                    dialogTitle = "Add Directory"
+                }
+                if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+                    setInputText("/add-dir ${chooser.selectedFile.absolutePath}")
+                }
+            }
+        }
+
         val toolbar = JPanel(FlowLayout(FlowLayout.LEFT, 4, 2)).apply {
             add(newSessionBtn)
             add(modelBox)
             add(presetBtn)
             add(settingsBtn)
+            add(addDirBtn)
         }
 
         val centerWrapper = JPanel(BorderLayout()).apply {
