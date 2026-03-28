@@ -242,5 +242,12 @@
                 description="Inject the last 5 test runs from .idea/testHistory/ (pass/fail counts, duration, failure messages) into the Claudio input bar">
             <add-to-group group-id="ToolsMenu" anchor="last"/>
         </action>
+
+        <action id="com.lacrearthur.claudio.SendScratchFileAction"
+                class="com.lacrearthur.claudio.SendScratchFileAction"
+                text="Send Scratch File to Claude"
+                description="Inject the active scratch file content into the Claudio input bar">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
     </actions>
 </idea-plugin>

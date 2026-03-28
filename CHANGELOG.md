@@ -1,3 +1,9 @@
+##### **v0.8.39** (2026-03-28)
+
+**Living Context**
+
+- Scratch file to Claude - open any scratch file in the editor, then Tools > Send Scratch File to Claude injects its content into the input bar; scratch files are where developers think through problems - now Claude can see that thinking too
+
 ##### **v0.8.38** (2026-03-28)
 
 **Living Context**
