@@ -90,15 +90,19 @@ Remaining moat features. Things no terminal or standalone app can touch.
 - [x] Session favorites / pinning
 - [x] Export session to markdown
 
+## Phase 7: IDE-Native Power Features
+
+Deep hooks into IntelliJ's execution model and code model. Things no standalone Claude GUI can do.
+
+- [ ] Tab close button (× on each tab - terminates the claude subprocess cleanly)
+- [ ] "Explain this" right-click action (select any code → "Ask Claude to explain" → injects selection + file context via PSI)
+- [ ] Run/test failure injection (when a run configuration fails, offer one-click to send output + stack trace to Claude)
+- [ ] TODO/FIXME scan (scan project TODOs via IDE index, inject as a batch into Claude's input)
+- [ ] Inline diff preview before applying (when Claude writes a file, show native IntelliJ diff dialog before the write lands)
+
 ## Principles
 
 - **Lean into the IDE.** Build what standalone tools can't.
 - **Minimize code.** The terminal does the heavy lifting.
 - **Kotlin + Swing only.** No new languages, no npm, no extra runtimes.
 - **Ship incrementally.** Each phase is independently useful.
-
-### Multi-tab chat - sub-items
-
-- [ ] Add second TerminalView tab with independent claude process (each tab = own ClaudePanel instance, tab strip UI)
-- [ ] Tab naming: auto-name "Claude 1/2/..." + support rename via double-click
-- [ ] Tab close / reopen (close terminates the claude subprocess; reopen starts fresh)
