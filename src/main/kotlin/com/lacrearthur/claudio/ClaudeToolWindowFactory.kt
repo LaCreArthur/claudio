@@ -38,6 +38,14 @@ private val MONO_11 = Font("JetBrains Mono", Font.PLAIN, 11)
 
 private data class SessionEntry(val preview: String, val timestamp: String, val sessionId: String)
 
+private data class ClaudePreset(val name: String, val systemPrompt: String)
+
+private val DEFAULT_PRESETS = listOf(
+    ClaudePreset("Backend Agent", "You are a backend engineering specialist. Focus on server-side code, APIs, databases, and performance. Be direct and concise."),
+    ClaudePreset("Review Agent", "You are a code reviewer. Analyze code for bugs, security issues, performance problems, and style. Give specific, actionable feedback."),
+    ClaudePreset("Test Agent", "You are a testing specialist. Write unit tests, integration tests, and suggest edge cases. Prefer practical coverage over 100% coverage."),
+)
+
 class ClaudeToolWindowFactory : ToolWindowFactory, DumbAware {
     override suspend fun isApplicableAsync(project: Project): Boolean = true
 
@@ -565,7 +573,45 @@ class ClaudioTabbedPanel(
                 addTab()
             }
         }
-        add(tabbedPane, BorderLayout.CENTER)
+
+        // Preset launcher toolbar - sits above the tab strip, right-aligned.
+        // Placement: NORTH of a wrapper panel that holds the tabbedPane in CENTER.
+        // This keeps it physically adjacent to the "+" tab without touching SessionHistoryPanel.
+        val presetBtn = JButton("⚡").apply {
+            toolTipText = "Agent presets - open a new session with a pre-loaded agent"
+            font = MONO_11
+            isFocusable = false
+        }
+        presetBtn.addActionListener { e ->
+            val menu = JPopupMenu()
+            for (preset in DEFAULT_PRESETS) {
+                menu.add(JMenuItem(preset.name).apply {
+                    font = MONO_11
+                    addActionListener {
+                        addTab()
+                        // The newly created tab is now selected; rename it and pre-fill input.
+                        val newIdx = tabbedPane.selectedIndex
+                        if (newIdx >= 0) {
+                            tabbedPane.setTitleAt(newIdx, preset.name)
+                            (tabbedPane.getTabComponentAt(newIdx) as? TabLabel)?.rename(preset.name)
+                        }
+                        appendToInput(preset.systemPrompt)
+                    }
+                })
+            }
+            val src = e.source as JComponent
+            menu.show(src, 0, src.height)
+        }
+
+        val toolbar = JPanel(FlowLayout(FlowLayout.RIGHT, 4, 2)).apply {
+            add(presetBtn)
+        }
+
+        val centerWrapper = JPanel(BorderLayout()).apply {
+            add(toolbar, BorderLayout.NORTH)
+            add(tabbedPane, BorderLayout.CENTER)
+        }
+        add(centerWrapper, BorderLayout.CENTER)
     }
 
     private fun addTab() {
@@ -604,6 +650,14 @@ class ClaudioTabbedPanel(
                     if (e.clickCount == 2) startEdit()
                 }
             })
+        }
+
+        fun rename(newName: String) {
+            label.text = newName
+            val idx = tabbedPane.indexOfTabComponent(this)
+            if (idx >= 0) tabbedPane.setTitleAt(idx, newName)
+            revalidate()
+            repaint()
         }
 
         private fun startEdit() {

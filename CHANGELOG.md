@@ -1,3 +1,9 @@
+##### **v0.6.6** (2026-03-28)
+
+**Agent Presets**
+
+- Agent preset launcher - click ⚡ near the tab strip to open a new session pre-loaded with a named agent (Backend Agent, Review Agent, Test Agent); pre-fills the input bar with the agent's system prompt
+
 ##### **v0.6.5** (2026-03-28)
 
 **Multi-Session**
