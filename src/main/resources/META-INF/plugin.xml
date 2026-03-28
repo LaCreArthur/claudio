@@ -49,6 +49,10 @@
             implementationClass="com.lacrearthur.claudio.FixWithClaudeMarkerProvider"/>
 
         <consoleFilterProvider implementation="com.lacrearthur.claudio.ClaudeFileFilterProvider"/>
+
+        <statusBarWidgetFactory implementation="com.lacrearthur.claudio.ClaudioStatusBarWidgetFactory"
+                                id="ClaudioStatus"
+                                order="last"/>
         <toolWindow id="Claude"
                     anchor="right"
                     factoryClass="com.lacrearthur.claudio.ClaudeToolWindowFactory"

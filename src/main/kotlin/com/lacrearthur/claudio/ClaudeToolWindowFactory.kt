@@ -676,6 +676,8 @@ class ClaudePanel(
         }
     }
 
+    fun currentStatus(): String = statusLabel.text.trim()
+
     fun appendToInput(text: String) {
         inputArea.append(text)
         inputArea.requestFocusInWindow()
@@ -914,6 +916,11 @@ class ClaudioTabbedPanel(
 
     fun sendText(text: String) {
         (tabbedPane.selectedComponent as? ClaudePanel)?.sendText(text)
+    }
+
+    fun currentStatus(): String {
+        val panel = tabbedPane.selectedComponent as? ClaudePanel ?: return "Off"
+        return panel.currentStatus()
     }
 
     override fun dispose() {}

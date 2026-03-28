@@ -1,3 +1,9 @@
+##### **v0.7.5** (2026-03-28)
+
+**Polish**
+
+- Status bar widget - "⚡ Ready" / "⚡ Generating..." appears in the IDE status bar; updates every 500ms; click it to focus the Claudio tool window
+
 ##### **v0.7.4** (2026-03-28)
 
 **Polish**
