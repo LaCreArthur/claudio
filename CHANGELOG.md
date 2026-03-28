@@ -1,3 +1,9 @@
+##### **v0.8.19** (2026-03-28)
+
+**Input Superpowers**
+
+- Debugger variable snapshot - "Send Debugger Context to Claude" now also includes the top 10 visible local variables from the current stack frame (e.g. `x = 42`, `str = "hello"`) so Claude has full state context, not just the pause location
+
 ##### **v0.8.18** (2026-03-28)
 
 **Input Superpowers**
