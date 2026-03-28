@@ -1,3 +1,9 @@
+##### **v0.8.2** (2026-03-28)
+
+**IDE-Native Power Features**
+
+- Run/test failure injection - when a run configuration exits with a non-zero code, Claudio shows a balloon notification with a "Send to Claude" action that injects the run name, exit code, and captured output into the input bar
+
 ##### **v0.8.1** (2026-03-28)
 
 **IDE-Native Power Features**
