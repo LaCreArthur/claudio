@@ -131,6 +131,9 @@ dependencies {
 ```
 Use `./gradlew printBundledModules` to discover available module names. Platform modules live in `lib/modules/` and are NOT on the compile classpath by default.
 
+**Hard stop - classes that are in `app.jar` only (NOT in any bundledModule):**
+- `EditorHistoryManager` (`com.intellij.openapi.fileEditor.impl`) - use `FileEditorManager.allEditors` instead for open-file context; `EditorHistoryManager` is not reachable via `bundledModule`
+
 **Rules:**
 - `intellijIdeaCommunity()` is deprecated for 2025.3+ -use `intellijIdea()`
 - Always add `bundledPlugin("org.jetbrains.plugins.terminal")` for TerminalView API
