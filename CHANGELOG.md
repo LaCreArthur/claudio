@@ -1,3 +1,9 @@
+##### **v0.8.14** (2026-03-28)
+
+**Context Superpowers**
+
+- Debugger context injection - when the IDE debugger is paused at a breakpoint, "Send Debugger Context to Claude" (in the debugger toolbar and Tools menu) injects the session name and current file:line into Claudio so you can ask Claude to help debug the issue immediately
+
 ##### **v0.8.13** (2026-03-28)
 
 **Context Superpowers**
