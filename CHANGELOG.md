@@ -1,3 +1,9 @@
+##### **v0.8.33** (2026-03-28)
+
+**Code Archaeology**
+
+- VCS selection history - select any code in the editor, right-click and choose "Send Selection History to Claude"; injects the git log -L output for the selected line range (up to 10 commits, 100 lines) so Claude can see exactly who changed these lines and when
+
 ##### **v0.8.32** (2026-03-28)
 
 **Code Archaeology**

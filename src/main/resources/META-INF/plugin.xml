@@ -98,11 +98,19 @@
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
         </action>
 
+        <action id="com.lacrearthur.claudio.SendVcsSelectionHistoryAction"
+                class="com.lacrearthur.claudio.SendVcsSelectionHistoryAction"
+                text="Send Selection History to Claude"
+                description="Run git log -L on the selected line range and inject the commit history into the Claudio input bar">
+            <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="com.lacrearthur.claudio.ExplainWithClaudeAction"/>
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
+
         <action id="com.lacrearthur.claudio.SendDocumentationAction"
                 class="com.lacrearthur.claudio.SendDocumentationAction"
                 text="Send Documentation to Claude"
                 description="Fetch KDoc/Javadoc for the symbol at caret and inject it into the Claudio input bar">
-            <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="com.lacrearthur.claudio.ExplainWithClaudeAction"/>
+            <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="com.lacrearthur.claudio.SendVcsSelectionHistoryAction"/>
             <add-to-group group-id="ToolsMenu" anchor="last"/>
         </action>
 
