@@ -1,3 +1,9 @@
+##### **v0.7.8** (2026-03-28)
+
+**Polish**
+
+- Session favorites - right-click any session in the History sidebar to Pin or Unpin it; pinned sessions float to the top with a ★ marker and persist across IDE restarts
+
 ##### **v0.7.7** (2026-03-28)
 
 **Polish**

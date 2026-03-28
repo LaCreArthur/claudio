@@ -1042,6 +1042,7 @@ class ClaudioTabbedPanel(
     private inner class SessionHistoryPanel : JPanel(BorderLayout()) {
         private val listModel = DefaultListModel<SessionEntry>()
         private val sessionList = JList(listModel)
+        private val pinnedIds: MutableSet<String> = loadPinned()
 
         init {
             preferredSize = Dimension(220, 0)
@@ -1053,8 +1054,9 @@ class ClaudioTabbedPanel(
                     list: JList<*>, value: Any?, index: Int, isSelected: Boolean, cellHasFocus: Boolean,
                 ): Component {
                     val entry = value as SessionEntry
+                    val prefix = if (entry.sessionId in pinnedIds) "★ " else ""
                     val comp = super.getListCellRendererComponent(
-                        list, "${entry.timestamp}  ${entry.preview}", index, isSelected, cellHasFocus,
+                        list, "$prefix${entry.timestamp}  ${entry.preview}", index, isSelected, cellHasFocus,
                     )
                     (comp as JLabel).font = MONO_11
                     return comp
@@ -1075,14 +1077,49 @@ class ClaudioTabbedPanel(
 
             sessionList.addMouseListener(object : MouseAdapter() {
                 override fun mouseClicked(e: MouseEvent) {
-                    if (e.clickCount == 2) {
+                    if (e.clickCount == 2 && SwingUtilities.isLeftMouseButton(e)) {
                         val entry = sessionList.selectedValue ?: return
                         sendText("claude --resume ${entry.sessionId}")
                     }
                 }
+                override fun mousePressed(e: MouseEvent) { if (e.isPopupTrigger) showContextMenu(e) }
+                override fun mouseReleased(e: MouseEvent) { if (e.isPopupTrigger) showContextMenu(e) }
+                private fun showContextMenu(e: MouseEvent) {
+                    val idx = sessionList.locationToIndex(e.point)
+                    if (idx < 0) return
+                    sessionList.selectedIndex = idx
+                    val entry = listModel.getElementAt(idx) ?: return
+                    val isPinned = entry.sessionId in pinnedIds
+                    val menu = JPopupMenu()
+                    menu.add(JMenuItem(if (isPinned) "Unpin" else "Pin").apply {
+                        font = MONO_11
+                        addActionListener {
+                            if (isPinned) pinnedIds.remove(entry.sessionId)
+                            else pinnedIds.add(entry.sessionId)
+                            savePinned()
+                            ApplicationManager.getApplication().executeOnPooledThread { loadSessions() }
+                        }
+                    })
+                    menu.show(sessionList, e.x, e.y)
+                }
             })
 
             ApplicationManager.getApplication().executeOnPooledThread { loadSessions() }
+        }
+
+        private fun loadPinned(): MutableSet<String> {
+            val file = File(System.getProperty("user.home"), ".claudio/pinned.json")
+            if (!file.exists()) return mutableSetOf()
+            return try {
+                val text = file.readText().trim().trimStart('[').trimEnd(']')
+                text.split(",").map { it.trim().trim('"') }.filter { it.isNotEmpty() }.toMutableSet()
+            } catch (_: Exception) { mutableSetOf() }
+        }
+
+        private fun savePinned() {
+            val file = File(System.getProperty("user.home"), ".claudio/pinned.json")
+            file.parentFile.mkdirs()
+            file.writeText("[${pinnedIds.joinToString(",") { "\"$it\"" }}]")
         }
 
         private fun loadSessions() {
@@ -1098,7 +1135,8 @@ class ClaudioTabbedPanel(
                     SessionEntry(extractFirstUserMessage(file), fmt.format(java.util.Date(mtime)), file.nameWithoutExtension)
                 }
                 .toList()
-            SwingUtilities.invokeLater { listModel.clear(); entries.forEach { listModel.addElement(it) } }
+            val sorted = entries.sortedWith(compareByDescending<SessionEntry> { it.sessionId in pinnedIds }.thenByDescending { it.timestamp })
+            SwingUtilities.invokeLater { listModel.clear(); sorted.forEach { listModel.addElement(it) } }
         }
 
         private fun extractFirstUserMessage(file: File): String {
