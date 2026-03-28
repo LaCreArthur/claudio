@@ -1,3 +1,9 @@
+##### **v0.8.16** (2026-03-28)
+
+**Input Superpowers**
+
+- Persistent "Always Allow" per project - permission dialogs now have a "Remember for this project" checkbox; checking it and clicking Allow saves the tool to `~/.claudio/allowlist/<project-hash>.json` and auto-approves future requests for that tool without showing a dialog
+
 ##### **v0.8.15** (2026-03-28)
 
 **Context Superpowers**

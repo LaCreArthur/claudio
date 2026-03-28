@@ -234,6 +234,7 @@ class PermissionDialog(
 ) : DialogWrapper(project) {
 
     private var choice = PermissionChoice.ALLOW_ONCE
+    private val rememberCheckbox = JCheckBox("Remember for this project")
 
     init {
         title = "Claude Permission Request"
@@ -285,11 +286,16 @@ class PermissionDialog(
             panel.add(radio)
         }
 
+        panel.add(Box.createVerticalStrut(8))
+        rememberCheckbox.alignmentX = Component.LEFT_ALIGNMENT
+        panel.add(rememberCheckbox)
+
         panel.preferredSize = Dimension(440, panel.preferredSize.height)
         return panel
     }
 
     fun getChoice(): PermissionChoice = choice
+    fun isRememberChecked(): Boolean = rememberCheckbox.isSelected
 
     override fun createActions(): Array<Action> = arrayOf(okAction, cancelAction)
     override fun doOKAction() { super.doOKAction() }

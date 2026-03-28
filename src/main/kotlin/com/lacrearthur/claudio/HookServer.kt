@@ -7,6 +7,7 @@ import com.intellij.openapi.project.Project
 import com.lacrearthur.claudio.test.ClaudioTestServiceImpl
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
+import java.io.File
 import java.net.InetSocketAddress
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
@@ -37,6 +38,36 @@ class HookServer(
 
     // Session-level allow policy: tools the user said "always allow this session"
     private val sessionAllowed = mutableSetOf<String>()
+
+    // Project-level persistent allowlist: tools auto-allowed across sessions
+    private val projectAllowlist: MutableSet<String> = loadProjectAllowlist()
+
+    private fun allowlistFile(): File {
+        val hash = project.basePath?.hashCode()?.toString(16) ?: "default"
+        return File(System.getProperty("user.home"), ".claudio/allowlist/$hash.json")
+    }
+
+    private fun loadProjectAllowlist(): MutableSet<String> {
+        return try {
+            val file = allowlistFile()
+            if (!file.exists()) return mutableSetOf()
+            val text = file.readText()
+            text.trim().removeSurrounding("[", "]")
+                .split(",")
+                .map { it.trim().removeSurrounding("\"") }
+                .filter { it.isNotEmpty() }
+                .toMutableSet()
+        } catch (_: Exception) { mutableSetOf() }
+    }
+
+    private fun saveToProjectAllowlist(toolName: String) {
+        projectAllowlist.add(toolName)
+        try {
+            val file = allowlistFile()
+            file.parentFile.mkdirs()
+            file.writeText("[${projectAllowlist.joinToString(",") { "\"$it\"" }}]")
+        } catch (_: Exception) {}
+    }
 
     fun start() {
         try {
@@ -108,6 +139,11 @@ class HookServer(
             return handlePlanExit()
         }
 
+        if (tool in projectAllowlist) {
+            log.warn("[HOOKS] project-allow: $tool")
+            return allow()
+        }
+
         if (tool in sessionAllowed) {
             log.warn("[HOOKS] session-allow: $tool")
             return allow()
@@ -158,10 +194,18 @@ class HookServer(
                 val dialog = PermissionDialog(project, request)
                 try { project.service<ClaudioTestServiceImpl>().setActiveDialog("permission") } catch (_: Exception) {}
                 if (dialog.showAndGet()) {
+                    val remember = dialog.isRememberChecked()
                     response = when (dialog.getChoice()) {
-                        PermissionChoice.ALLOW_ONCE   -> allow()
-                        PermissionChoice.ALLOW_ALWAYS -> { sessionAllowed.add(tool); allow() }
-                        PermissionChoice.DENY         -> deny("Denied in IDE")
+                        PermissionChoice.ALLOW_ONCE   -> {
+                            if (remember) saveToProjectAllowlist(tool)
+                            allow()
+                        }
+                        PermissionChoice.ALLOW_ALWAYS -> {
+                            if (remember) saveToProjectAllowlist(tool)
+                            sessionAllowed.add(tool)
+                            allow()
+                        }
+                        PermissionChoice.DENY -> deny("Denied in IDE")
                     }
                 }
                 log.warn("[HOOKS] $tool -> ${dialog.getChoice()}")
