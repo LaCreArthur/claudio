@@ -123,7 +123,9 @@ class HookServer(
     //
     // Hook response IS the decision. CC processes it, terminal prompt clears.
     // No terminal keystroke replay needed for any of these paths.
-    private val INTERNAL_TOOLS  = setOf("AskUserQuestion", "EnterPlanMode", "TodoWrite", "TodoRead")
+    // AskUserQuestion must NOT be here - auto-allowing suppresses the terminal ☐ prompt
+    // and CliOutputParser never fires, leaving Claude with no answer. Let CC handle it natively.
+    private val INTERNAL_TOOLS  = setOf("EnterPlanMode", "TodoWrite", "TodoRead")
     private val PLAN_EXIT_TOOLS = setOf("ExitPlanMode")
     private val REAL_TOOLS      = setOf("Bash", "Write", "Edit", "Read", "MultiEdit", "NotebookEdit", "WebSearch", "WebFetch")
 

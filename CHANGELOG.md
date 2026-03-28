@@ -1,3 +1,9 @@
+##### **v0.8.49** (2026-03-28)
+
+**Bug Fix**
+
+- Fix AskUserQuestion swallowing user answers - removing AskUserQuestion from the auto-allow list means the terminal now shows the ☐ prompt and CliOutputParser can relay the answer back to Claude; previously the hook would "allow" the question event but never send an answer, leaving Claude waiting indefinitely
+
 ##### **v0.8.48** (2026-03-28)
 
 **Developer Awareness**
