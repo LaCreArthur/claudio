@@ -1,3 +1,9 @@
+##### **v0.7.7** (2026-03-28)
+
+**Polish**
+
+- Export session to Markdown - click ⬇ in the input bar to save the current session transcript as a `.md` file; the saved file opens in the editor automatically
+
 ##### **v0.7.6** (2026-03-28)
 
 **Polish**

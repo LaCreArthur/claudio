@@ -34,6 +34,8 @@ import com.intellij.notification.Notifications
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.fileChooser.FileChooserFactory
+import com.intellij.openapi.fileChooser.FileSaverDescriptor
 import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.vfs.LocalFileSystem
@@ -376,6 +378,7 @@ class ClaudePanel(
     @Volatile private var lastOutputTime = 0L
     private val activityTimer: Timer
     private var wasGenerating = false
+    private val sessionTranscript = StringBuilder()
 
     init {
         log.warn("[CLAUDE] ClaudePanel init, project=${project.name} basePath=${project.basePath}")
@@ -442,6 +445,7 @@ class ClaudePanel(
         log.warn("[CLAUDE] launchClaude()")
         terminalContainer.removeAll()
         terminalView = null
+        sessionTranscript.clear()
         updateStatusText("Starting...")
 
         val tabsManager = try {
@@ -535,6 +539,7 @@ class ClaudePanel(
                         if (newText.trim().all { it in spinnerChars }) return
                         log.warn("[CLAUDE_OUT] ${newText.take(300).replace("\n", "\\n")}")
                         outputParser.feed(newText)
+                        sessionTranscript.append(newText)
                         try { project.service<ClaudioTestServiceImpl>().appendTranscript(newText) } catch (_: Exception) {}
                     }
                 }
@@ -627,6 +632,28 @@ class ClaudePanel(
             override fun actionPerformed(e: AnActionEvent) { tw.activate(null) }
         })
         Notifications.Bus.notify(notification, project)
+    }
+
+    private fun exportSession() {
+        val date = java.text.SimpleDateFormat("yyyy-MM-dd").format(java.util.Date())
+        val descriptor = FileSaverDescriptor("Export Session", "Save session transcript as Markdown", "md")
+        val wrapper = FileChooserFactory.getInstance().createSaveFileDialog(descriptor, project)
+        val baseVf = project.basePath?.let { LocalFileSystem.getInstance().findFileByPath(it) }
+        val result = wrapper.save(baseVf, "claude-session-$date.md") ?: return
+        val file = result.getVirtualFile(true) ?: return
+        val content = buildMarkdown()
+        ApplicationManager.getApplication().runWriteAction {
+            file.setBinaryContent(content.toByteArray(Charsets.UTF_8))
+        }
+        OpenFileDescriptor(project, file).navigate(true)
+    }
+
+    private fun buildMarkdown(): String {
+        val clean = sessionTranscript.toString()
+            .replace(Regex("\u001b\\[[0-9;]*[A-Za-z]"), "")
+            .replace("\r\n", "\n")
+            .replace("\r", "\n")
+        return "# Claude Session\n\n```\n$clean\n```\n"
     }
 
     fun sendText(text: String) {
@@ -817,6 +844,12 @@ class ClaudePanel(
         rightPanel.add(permModeBtn)
         rightPanel.add(Box.createVerticalStrut(4))
         rightPanel.add(buildBtn)
+        rightPanel.add(Box.createVerticalStrut(4))
+        rightPanel.add(JButton("⬇").apply {
+            toolTipText = "Export session to Markdown"
+            font = MONO_11
+            addActionListener { exportSession() }
+        })
         rightPanel.add(Box.createVerticalStrut(4))
         rightPanel.add(statusLabel)
 

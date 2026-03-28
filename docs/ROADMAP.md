@@ -88,7 +88,7 @@ Remaining moat features. Things no terminal or standalone app can touch.
 - [x] Keyboard shortcuts: Escape - return to editor, Cmd+Shift+C - focus Claude
 - [x] Status bar widget (session state, model, cost)
 - [ ] Session favorites / pinning
-- [ ] Export session to markdown
+- [x] Export session to markdown
 
 ## Principles
 
