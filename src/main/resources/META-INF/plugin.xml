@@ -143,5 +143,12 @@
                 description="Inject all editor bookmarks as a file:line list into the Claudio input bar">
             <add-to-group group-id="ToolsMenu" anchor="last"/>
         </action>
+
+        <action id="com.lacrearthur.claudio.SendRunConfigsToClaudeAction"
+                class="com.lacrearthur.claudio.SendRunConfigsToClaudeAction"
+                text="Send Run Configurations to Claude"
+                description="Inject all run configurations (name, type, parameters) into the Claudio input bar">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
     </actions>
 </idea-plugin>

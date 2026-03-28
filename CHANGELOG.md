@@ -1,3 +1,9 @@
+##### **v0.8.23** (2026-03-28)
+
+**VCS + Code Intelligence**
+
+- Send Run Configurations to Claude - Tools > Send Run Configurations to Claude injects all run configs as a formatted list (name, type, working directory, program parameters); capped at 20; shows a notification if none exist
+
 ##### **v0.8.22** (2026-03-28)
 
 **VCS + Code Intelligence**
