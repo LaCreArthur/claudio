@@ -1,3 +1,9 @@
+##### **v0.8.40** (2026-03-28)
+
+**Living Context**
+
+- IDE notification log to Claude - Tools > Send Notification Log to Claude injects the last 15 IDE notifications (errors, warnings, and info) with their type and content; paste this into Claude to ask "what does this mean" for cryptic build tool or plugin warnings
+
 ##### **v0.8.39** (2026-03-28)
 
 **Living Context**

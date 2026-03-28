@@ -249,5 +249,12 @@
                 description="Inject the active scratch file content into the Claudio input bar">
             <add-to-group group-id="ToolsMenu" anchor="last"/>
         </action>
+
+        <action id="com.lacrearthur.claudio.SendNotificationLogAction"
+                class="com.lacrearthur.claudio.SendNotificationLogAction"
+                text="Send Notification Log to Claude"
+                description="Inject the last 15 IDE notifications (errors, warnings, info) into the Claudio input bar so Claude can explain cryptic IDE or build tool messages">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
     </actions>
 </idea-plugin>
