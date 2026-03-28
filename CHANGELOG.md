@@ -1,3 +1,9 @@
+##### **v0.8.12** (2026-03-28)
+
+**Context Superpowers**
+
+- Send to Claude from Project view - right-click any file in the Project tree and choose "Send to Claude" to inject `@filepath` into the Claudio input bar instantly
+
 ##### **v0.8.11** (2026-03-28)
 
 **Context Superpowers**

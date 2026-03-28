@@ -114,5 +114,12 @@
                 description="Collect all project TODO/FIXME items and send them to Claudio">
             <add-to-group group-id="ToolsMenu" anchor="last"/>
         </action>
+
+        <action id="com.lacrearthur.claudio.SendProjectFileAction"
+                class="com.lacrearthur.claudio.SendProjectFileAction"
+                text="Send to Claude"
+                description="Inject @filepath into the Claudio input bar">
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
+        </action>
     </actions>
 </idea-plugin>
