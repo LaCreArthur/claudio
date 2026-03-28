@@ -111,6 +111,17 @@ The IDE knows things no terminal ever will: where the cursor is right now, what 
 - [x] Send to Claude from Project view - right-click any file in Project tree → "Send to Claude" inserts `@filepath` (evidence: ghostty plugin, complements Send Selection; effort: small)
 - [x] Context window progress bar - show `1.2k/200k` token usage next to cost label using accumulated token count vs known model limits (evidence: issue #40018; uses already-tracked totalTokens; effort: small)
 
+## Phase 9: Input Superpowers
+
+The terminal can't paste images, handle drag-and-drop, or remember what you allowed last time. Ship the things that make the input bar genuinely better than a text field.
+
+- [x] @symbol autocomplete - extend `@file` completion to show name-matching files (⊞ prefix) via FilenameIndex in addition to path matches (evidence: Cursor supports, strong IDE moat, already planned in Phase 8; effort: medium)
+- [ ] Image paste in input bar - Cmd+V with an image on the clipboard saves it to a temp file and injects the path into the prompt; lets users paste screenshots of errors/UI directly (evidence: issue #33005 anthropics/claude-code; moat: high - requires IDE clipboard API; effort: medium)
+- [ ] Drag-and-drop files to input bar - drag any file from the Project view into the input bar to insert `@filepath` as context (evidence: issue #35814 requests this as a "native experience" feature; moat: medium - requires JetBrains DnD API; effort: medium)
+- [ ] Persistent "Always Allow" per project - add a "Remember for this project" checkbox to permission dialogs; approved commands saved to `~/.claudio/allowlist/<project-hash>.json` and auto-allowed on future requests (evidence: issue #38795 - repeated approvals are top user pain; moat: high - our hook dialogs own the flow; effort: small)
+- [ ] Debugger variable snapshot - extend debugger context injection to include visible local variables from the XDebugger variable tree at the breakpoint (evidence: Cursor does this; moat: very high - XDebugger API only; effort: large)
+- [ ] /add-dir directory picker - a native "Add Directory" button in the toolbar opens a folder chooser and types `/add-dir <path>` into the input bar (evidence: issue #36123; moat: low-medium - removes CLI friction; effort: small)
+
 ## Principles
 
 - **Lean into the IDE.** Build what standalone tools can't.

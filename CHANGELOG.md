@@ -1,3 +1,9 @@
+##### **v0.8.15** (2026-03-28)
+
+**Context Superpowers**
+
+- @symbol autocomplete - type `@FooClass` in the input bar to see matching files by name (⊞ prefix) alongside path matches; uses the IDE filename index so it works across all project types including Rider/C# projects
+
 ##### **v0.8.14** (2026-03-28)
 
 **Context Superpowers**
