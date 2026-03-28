@@ -256,5 +256,12 @@
                 description="Inject the last 15 IDE notifications (errors, warnings, info) into the Claudio input bar so Claude can explain cryptic IDE or build tool messages">
             <add-to-group group-id="ToolsMenu" anchor="last"/>
         </action>
+
+        <action id="com.lacrearthur.claudio.SendLastRunOutputAction"
+                class="com.lacrearthur.claudio.SendLastRunOutputAction"
+                text="Send Last Run Output to Claude"
+                description="Inject the captured output from the most recent run configuration (up to 100 lines) into the Claudio input bar; works for successful runs, not just failures">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
     </actions>
 </idea-plugin>

@@ -1,3 +1,9 @@
+##### **v0.8.41** (2026-03-28)
+
+**Living Context**
+
+- Last run output to Claude - Tools > Send Last Run Output to Claude injects the captured output from the most recent run configuration (up to 100 lines); works for successful runs, not just failures; ideal for "explain this output" or "what is this log line saying"
+
 ##### **v0.8.40** (2026-03-28)
 
 **Living Context**

@@ -19,8 +19,20 @@ import java.util.concurrent.ConcurrentHashMap
 /**
  * Fires a Claudio balloon notification when a run configuration exits with a non-zero code.
  * The balloon has a "Send to Claude" action that injects the failure output into the input bar.
+ *
+ * Also stores the last captured run output (regardless of exit code) in [lastRunOutput] so that
+ * SendLastRunOutputAction can inject it on demand.
  */
 class RunFailureListener(private val project: Project) : ExecutionListener {
+
+    companion object {
+        /** Last captured run output per project (configName + raw output + exitCode). Thread-safe. */
+        data class LastRunSnapshot(val configName: String, val exitCode: Int, val output: String)
+
+        private val lastRunOutput = ConcurrentHashMap<Project, LastRunSnapshot>()
+
+        fun getLastRun(project: Project): LastRunSnapshot? = lastRunOutput[project]
+    }
 
     private val outputBuffers = ConcurrentHashMap<ProcessHandler, StringBuilder>()
 
@@ -43,9 +55,14 @@ class RunFailureListener(private val project: Project) : ExecutionListener {
         exitCode: Int
     ) {
         val output = outputBuffers.remove(handler)?.toString() ?: ""
+        val configName = env.runProfile?.name ?: "Run"
+
+        // Store for on-demand access regardless of exit code (keep last 100 lines)
+        val trimmedOutput = trimToLastNLines(output, 100)
+        lastRunOutput[project] = LastRunSnapshot(configName, exitCode, trimmedOutput)
+
         if (exitCode == 0) return
 
-        val configName = env.runProfile?.name ?: "Run"
         val prompt = buildPrompt(configName, exitCode, output)
 
         val notification = Notification(
@@ -64,6 +81,11 @@ class RunFailureListener(private val project: Project) : ExecutionListener {
             }
         })
         Notifications.Bus.notify(notification, project)
+    }
+
+    private fun trimToLastNLines(text: String, n: Int): String {
+        val lines = text.lines()
+        return if (lines.size <= n) text else lines.takeLast(n).joinToString("\n")
     }
 
     private fun buildPrompt(configName: String, exitCode: Int, output: String): String {
