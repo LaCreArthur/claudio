@@ -51,8 +51,11 @@ import com.intellij.diff.DiffDialogHints
 import com.intellij.diff.DiffManager
 import com.intellij.diff.requests.SimpleDiffRequest
 import java.awt.*
+import java.awt.datatransfer.DataFlavor
 import java.awt.event.*
+import java.awt.image.BufferedImage
 import java.io.File
+import javax.imageio.ImageIO
 import java.nio.file.Path
 import javax.swing.*
 
@@ -848,6 +851,32 @@ class ClaudePanel(
         inputArea.actionMap.put("relay-shift-tab", object : AbstractAction() {
             override fun actionPerformed(e: ActionEvent) {
                 terminalView?.coroutineScope?.launch { terminalView?.createSendTextBuilder()?.send("\u001b[Z") }
+            }
+        })
+
+        // Cmd+V with an image on the clipboard → save to temp PNG and inject the path
+        inputArea.getInputMap(JComponent.WHEN_FOCUSED)
+            .put(KeyStroke.getKeyStroke(KeyEvent.VK_V, mask), "claudio-paste")
+        inputArea.actionMap.put("claudio-paste", object : AbstractAction() {
+            override fun actionPerformed(e: ActionEvent) {
+                val clipboard = Toolkit.getDefaultToolkit().systemClipboard
+                if (clipboard.isDataFlavorAvailable(DataFlavor.imageFlavor)) {
+                    try {
+                        val img = clipboard.getData(DataFlavor.imageFlavor) as java.awt.Image
+                        val buf = BufferedImage(img.getWidth(null), img.getHeight(null), BufferedImage.TYPE_INT_ARGB)
+                        val g = buf.createGraphics()
+                        g.drawImage(img, 0, 0, null)
+                        g.dispose()
+                        val tempFile = File.createTempFile("claudio-paste-", ".png")
+                        tempFile.deleteOnExit()
+                        ImageIO.write(buf, "png", tempFile)
+                        appendToInput(tempFile.absolutePath)
+                    } catch (_: Exception) {
+                        inputArea.paste()
+                    }
+                } else {
+                    inputArea.paste()
+                }
             }
         })
 

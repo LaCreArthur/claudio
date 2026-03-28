@@ -1,3 +1,9 @@
+##### **v0.8.17** (2026-03-28)
+
+**Input Superpowers**
+
+- Image paste in input bar - press Cmd+V (macOS) / Ctrl+V (Win/Linux) when you have a screenshot or image on the clipboard; Claudio saves it to a temp PNG and injects the file path directly into the input bar so Claude can read it
+
 ##### **v0.8.16** (2026-03-28)
 
 **Input Superpowers**
