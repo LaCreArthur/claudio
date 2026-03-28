@@ -1,3 +1,9 @@
+##### **v0.8.13** (2026-03-28)
+
+**Context Superpowers**
+
+- Git blame context - "Ask Claude to Explain" now automatically includes the git blame for the selected line (`Git blame: abc1234 Author on Date "commit message"`) so Claude knows who last touched the code and why; silently omitted when git history is unavailable
+
 ##### **v0.8.12** (2026-03-28)
 
 **Context Superpowers**
