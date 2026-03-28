@@ -1,3 +1,9 @@
+##### **v0.8.6** (2026-03-28)
+
+**Deep IDE Integration**
+
+- One-click MCP setup - the MCP Servers panel now has a + button; click it to add a new server via a form dialog (name, command, comma-separated args); the entry is written directly into ~/.claude/settings.json
+
 ##### **v0.8.5** (2026-03-28)
 
 **Polish**

@@ -1483,12 +1483,25 @@ class ClaudioTabbedPanel(
         init {
             preferredSize = Dimension(220, 0)
             border = BorderFactory.createMatteBorder(0, 0, 0, 1, UIManager.getColor("Separator.foreground"))
-            val header = JLabel("  MCP Servers").apply {
+            val headerLabel = JLabel("  MCP Servers").apply {
                 font = MONO_11
                 border = BorderFactory.createEmptyBorder(4, 0, 4, 0)
             }
+            val addBtn = JButton("+").apply {
+                font = MONO_11
+                toolTipText = "Add MCP server"
+                isFocusable = false
+                isContentAreaFilled = false
+                isBorderPainted = false
+                addActionListener { showAddDialog() }
+            }
+            val headerPanel = JPanel(BorderLayout()).apply {
+                isOpaque = false
+                add(headerLabel, BorderLayout.WEST)
+                add(addBtn, BorderLayout.EAST)
+            }
             serverList.font = MONO_11
-            add(header, BorderLayout.NORTH)
+            add(headerPanel, BorderLayout.NORTH)
             add(JScrollPane(serverList), BorderLayout.CENTER)
             serverList.addMouseListener(object : MouseAdapter() {
                 override fun mouseClicked(e: MouseEvent) {
@@ -1571,6 +1584,78 @@ class ClaudioTabbedPanel(
                 sb.append(obj[i++])
             }
             return sb.toString().ifEmpty { null }
+        }
+
+        private fun showAddDialog() {
+            val dialog = AddMcpServerDialog()
+            if (!dialog.showAndGet()) return
+            val (name, command, args) = dialog.getEntry() ?: return
+            ApplicationManager.getApplication().executeOnPooledThread {
+                addServerToSettings(name, command, args)
+            }
+        }
+
+        private fun addServerToSettings(name: String, command: String, args: List<String>) {
+            val settingsFile = File(System.getProperty("user.home"), ".claude/settings.json")
+            settingsFile.parentFile.mkdirs()
+            val argsJson = args.joinToString(", ") { "\"${it.replace("\\", "\\\\").replace("\"", "\\\"")}\"" }
+            val entryJson = buildString {
+                append("    \"$name\": {\n      \"command\": \"$command\"")
+                if (args.isNotEmpty()) append(",\n      \"args\": [$argsJson]")
+                append("\n    }")
+            }
+            val original = if (settingsFile.exists()) settingsFile.readText() else "{}"
+            val mcpIdx = original.indexOf("\"mcpServers\"")
+            val newContent = if (mcpIdx < 0) {
+                val lastBrace = original.lastIndexOf('}')
+                if (lastBrace < 0) "{\n  \"mcpServers\": {\n$entryJson\n  }\n}"
+                else {
+                    val prefix = original.substring(0, lastBrace).trimEnd()
+                    val sep = if (prefix == "{") "" else ","
+                    "$prefix$sep\n  \"mcpServers\": {\n$entryJson\n  }\n}"
+                }
+            } else {
+                val objStart = original.indexOf('{', mcpIdx + 12)
+                if (objStart < 0) return
+                val objEnd = jsonObjectEnd(original, objStart)
+                if (objEnd < 0) return
+                val inner = original.substring(objStart + 1, objEnd).trim()
+                val sep = if (inner.isEmpty()) "" else ","
+                original.substring(0, objEnd) + "$sep\n$entryJson\n  " + original.substring(objEnd)
+            }
+            settingsFile.writeText(newContent)
+            LocalFileSystem.getInstance().refreshAndFindFileByIoFile(settingsFile)
+            SwingUtilities.invokeLater {
+                listModel.clear()
+                ApplicationManager.getApplication().executeOnPooledThread { loadServers() }
+            }
+        }
+
+        private inner class AddMcpServerDialog : DialogWrapper(project) {
+            private val nameField = JTextField(20)
+            private val commandField = JTextField(20)
+            private val argsField = JTextField(20)
+
+            init {
+                title = "Add MCP Server"
+                init()
+            }
+
+            override fun createCenterPanel(): JComponent {
+                val panel = JPanel(GridLayout(3, 2, 4, 6))
+                panel.add(JLabel("Name:")); panel.add(nameField)
+                panel.add(JLabel("Command:")); panel.add(commandField)
+                panel.add(JLabel("Args (comma-separated):")); panel.add(argsField)
+                return panel
+            }
+
+            fun getEntry(): Triple<String, String, List<String>>? {
+                val name = nameField.text.trim()
+                val command = commandField.text.trim()
+                if (name.isEmpty() || command.isEmpty()) return null
+                val args = argsField.text.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+                return Triple(name, command, args)
+            }
         }
     }
 
