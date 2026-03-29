@@ -103,7 +103,7 @@ class SendUsagesAction : AnAction() {
                     }
                     else -> {
                         log.warn("[Claudio] SendUsagesAction: injecting ${result.length} chars")
-                        val toolWindow = ToolWindowManager.getInstance(project).getToolWindow("Claude") ?: return
+                        val toolWindow = ToolWindowManager.getInstance(project).getToolWindow("Claudio") ?: return
                         toolWindow.show {
                             val content = toolWindow.contentManager.getContent(0) ?: return@show
                             val panel = content.component as? ClaudioTabbedPanel ?: return@show

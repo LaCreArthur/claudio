@@ -17,7 +17,7 @@ class SendLastRunOutputAction : AnAction("Send Last Run Output to Claude") {
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
         val snapshot = RunFailureListener.getLastRun(project)
-        val tw = ToolWindowManager.getInstance(project).getToolWindow("Claude") ?: return
+        val tw = ToolWindowManager.getInstance(project).getToolWindow("Claudio") ?: return
 
         if (snapshot == null) {
             tw.show {

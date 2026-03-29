@@ -1,10 +1,8 @@
 package com.lacrearthur.claudio
 
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
-import com.lacrearthur.claudio.test.ClaudioTestServiceImpl
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
 import java.io.File
@@ -78,7 +76,7 @@ class HookServer(
             server = httpServer
             port = httpServer.address.port
             log.warn("[HOOKS] server started on port $port")
-            try { project.service<ClaudioTestServiceImpl>().setHookPort(port) } catch (_: Exception) {}
+            project.withTestService { setHookPort(port) }
         } catch (e: Exception) {
             log.error("[HOOKS] failed to start server", e)
         }
@@ -93,7 +91,7 @@ class HookServer(
         val eventName = extractString(body, "hook_event_name") ?: ""
         val toolName  = extractString(body, "tool_name")
         log.warn("[HOOKS] $eventName${toolName?.let { ":$it" } ?: ""}")
-        try { project.service<ClaudioTestServiceImpl>().recordEvent(body) } catch (_: Exception) {}
+        project.withTestService { recordEvent(body) }
 
         try {
             val response = when (eventName) {
@@ -123,9 +121,10 @@ class HookServer(
     //
     // Hook response IS the decision. CC processes it, terminal prompt clears.
     // No terminal keystroke replay needed for any of these paths.
-    // AskUserQuestion must NOT be here - auto-allowing suppresses the terminal ☐ prompt
-    // and CliOutputParser never fires, leaving Claude with no answer. Let CC handle it natively.
-    private val INTERNAL_TOOLS  = setOf("EnterPlanMode", "TodoWrite", "TodoRead")
+    // AskUserQuestion: ☐ prompt renders after PreToolUse (already allowed). Auto-allowing at
+    // PermissionRequest prevents CC from showing a second terminal permission prompt that would
+    // consume the keystrokes we send to answer the ☐ selection via our native dialog.
+    private val INTERNAL_TOOLS  = setOf("EnterPlanMode", "TodoWrite", "TodoRead", "AskUserQuestion")
     private val PLAN_EXIT_TOOLS = setOf("ExitPlanMode")
     private val REAL_TOOLS      = setOf("Bash", "Write", "Edit", "Read", "MultiEdit", "NotebookEdit", "WebSearch", "WebFetch")
 
@@ -194,7 +193,7 @@ class HookServer(
                     detail = formatDetail(tool, toolInput),
                 )
                 val dialog = PermissionDialog(project, request)
-                try { project.service<ClaudioTestServiceImpl>().setActiveDialog("permission", dialog) } catch (_: Exception) {}
+                project.withTestService { setActiveDialog("permission", dialog) }
                 if (dialog.showAndGet()) {
                     val remember = dialog.isRememberChecked()
                     response = when (dialog.getChoice()) {
@@ -214,7 +213,7 @@ class HookServer(
             } catch (e: Exception) {
                 log.warn("[HOOKS] approval dialog error: ${e.message}")
             } finally {
-                try { project.service<ClaudioTestServiceImpl>().setActiveDialog(null) } catch (_: Exception) {}
+                project.withTestService { setActiveDialog(null) }
                 latch.countDown()
             }
         }
@@ -236,7 +235,7 @@ class HookServer(
             exchange.responseBody.write(bytes)
             exchange.responseBody.close()
             if (body != "{}") {
-                try { project.service<ClaudioTestServiceImpl>().recordResponse(body) } catch (_: Exception) {}
+                project.withTestService { recordResponse(body) }
             }
         } catch (e: Exception) {
             log.warn("[HOOKS] send error: ${e.message}")
@@ -282,28 +281,7 @@ class HookServer(
             else -> input.take(300)
         }
 
-        fun extractString(json: String, key: String): String? {
-            val pattern = Regex(""""$key"\s*:\s*"((?:[^"\\]|\\.)*)"""")
-            return pattern.find(json)?.groupValues?.get(1)
-                ?.replace("\\n", "\n")
-                ?.replace("\\t", "\t")
-                ?.replace("\\\"", "\"")
-                ?.replace("\\\\", "\\")
-        }
-
-        fun extractObject(json: String, key: String): String {
-            val keyIdx = json.indexOf("\"$key\"")
-            if (keyIdx < 0) return "{}"
-            val braceStart = json.indexOf('{', keyIdx + key.length + 2)
-            if (braceStart < 0) return "{}"
-            var depth = 0
-            for (i in braceStart until json.length) {
-                when (json[i]) {
-                    '{' -> depth++
-                    '}' -> { depth--; if (depth == 0) return json.substring(braceStart, i + 1) }
-                }
-            }
-            return "{}"
-        }
+        fun extractString(json: String, key: String): String? = JsonUtils.extractString(json, key)
+        fun extractObject(json: String, key: String): String = JsonUtils.extractObject(json, key)
     }
 }

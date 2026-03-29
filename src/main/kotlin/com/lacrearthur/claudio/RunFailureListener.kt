@@ -73,7 +73,7 @@ class RunFailureListener(private val project: Project) : ExecutionListener {
         )
         notification.addAction(object : AnAction("Send to Claude") {
             override fun actionPerformed(e: AnActionEvent) {
-                val tw = ToolWindowManager.getInstance(project).getToolWindow("Claude") ?: return
+                val tw = ToolWindowManager.getInstance(project).getToolWindow("Claudio") ?: return
                 tw.show {
                     val panel = tw.contentManager.getContent(0)?.component as? ClaudioTabbedPanel ?: return@show
                     panel.setInputText(prompt)

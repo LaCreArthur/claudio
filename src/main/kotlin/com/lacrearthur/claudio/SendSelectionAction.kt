@@ -24,7 +24,7 @@ class SendSelectionAction : AnAction() {
         val range = if (startLine == endLine) "L$startLine" else "L$startLine-L$endLine"
         val formatted = "@$relativePath#$range\n```\n$selectedText\n```\n"
 
-        val toolWindow = ToolWindowManager.getInstance(project).getToolWindow("Claude") ?: return
+        val toolWindow = ToolWindowManager.getInstance(project).getToolWindow("Claudio") ?: return
         toolWindow.show {
             val content = toolWindow.contentManager.getContent(0) ?: return@show
             val panel = content.component as? ClaudioTabbedPanel ?: return@show

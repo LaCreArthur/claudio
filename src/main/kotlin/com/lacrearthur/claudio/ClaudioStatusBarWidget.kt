@@ -23,7 +23,7 @@ class ClaudioStatusBarWidget(private val project: Project) : StatusBarWidget, St
     override fun getPresentation() = this
 
     override fun getText(): String {
-        val tw = ToolWindowManager.getInstance(project).getToolWindow("Claude") ?: return ""
+        val tw = ToolWindowManager.getInstance(project).getToolWindow("Claudio") ?: return ""
         val content = tw.contentManager.getContent(0) ?: return ""
         val panel = content.component as? ClaudioTabbedPanel ?: return ""
         val status = panel.currentStatus()
@@ -35,7 +35,7 @@ class ClaudioStatusBarWidget(private val project: Project) : StatusBarWidget, St
     override fun getAlignment() = 0f
 
     override fun getClickConsumer() = Consumer<MouseEvent> {
-        ToolWindowManager.getInstance(project).getToolWindow("Claude")?.activate(null)
+        ToolWindowManager.getInstance(project).getToolWindow("Claudio")?.activate(null)
     }
 
     override fun install(statusBar: StatusBar) {

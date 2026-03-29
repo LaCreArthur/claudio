@@ -48,7 +48,7 @@ class SendDebuggerContextAction : AnAction() {
             val prompt = "Debugger paused in \"$sessionName\" at $posStr. Help me debug this.$varStr"
 
             SwingUtilities.invokeLater {
-                val toolWindow = ToolWindowManager.getInstance(project).getToolWindow("Claude") ?: return@invokeLater
+                val toolWindow = ToolWindowManager.getInstance(project).getToolWindow("Claudio") ?: return@invokeLater
                 toolWindow.show {
                     val content = toolWindow.contentManager.getContent(0) ?: return@show
                     val panel = content.component as? ClaudioTabbedPanel ?: return@show

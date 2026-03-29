@@ -76,11 +76,14 @@ abstract class ClaudioTestBase {
             waitForProjectOpen()
             val project = singleProject()
 
-            // Open the tool window to trigger ClaudePanel init -> HookServer.start()
-            openToolWindow(TOOL_WINDOW_ID)
-
             // Use member function with explicit KClass to avoid ambiguity with reified extensions
             val svc: RemoteClaudioTestService = service(RemoteClaudioTestService::class, project)
+
+            // Default to Haiku for cost efficiency. Must be set BEFORE tool window opens.
+            svc.setTestDefaultModel("claude-haiku-4-5-20251001")
+
+            // Open the tool window to trigger ClaudePanel init -> HookServer.start()
+            openToolWindow(TOOL_WINDOW_ID)
 
             // Wait for hook server to register its port
             waitForHookServer(svc)

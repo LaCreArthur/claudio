@@ -37,7 +37,7 @@ class AskClaudeAboutErrorIntention : IntentionAction, Iconable {
         val line = editor.document.getLineNumber(offset) + 1
         val text = "Error in ${file.name}:$line\n$description\n\n"
 
-        val tw = ToolWindowManager.getInstance(project).getToolWindow("Claude") ?: return
+        val tw = ToolWindowManager.getInstance(project).getToolWindow("Claudio") ?: return
         (tw.contentManager.getContent(0)?.component as? ClaudioTabbedPanel)?.appendToInput(text)
         tw.activate(null)
     }

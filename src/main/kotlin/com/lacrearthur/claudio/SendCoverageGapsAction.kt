@@ -68,7 +68,7 @@ class SendCoverageGapsAction : AnAction("Send Uncovered Methods to Claude") {
             append("\nPlease write tests to improve coverage for these classes.")
         }
 
-        val tw = ToolWindowManager.getInstance(project).getToolWindow("Claude") ?: return
+        val tw = ToolWindowManager.getInstance(project).getToolWindow("Claudio") ?: return
         tw.show {
             val panel = tw.contentManager.getContent(0)?.component as? ClaudioTabbedPanel ?: return@show
             panel.setInputText(prompt)

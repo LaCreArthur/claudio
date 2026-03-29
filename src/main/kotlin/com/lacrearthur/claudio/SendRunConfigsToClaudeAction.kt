@@ -46,7 +46,7 @@ class SendRunConfigsToClaudeAction : AnAction("Send Run Configurations to Claude
             append("\nWhich configuration is failing, and what's happening?")
         }
 
-        val tw = ToolWindowManager.getInstance(project).getToolWindow("Claude") ?: return
+        val tw = ToolWindowManager.getInstance(project).getToolWindow("Claudio") ?: return
         tw.show {
             val panel = tw.contentManager.getContent(0)?.component as? ClaudioTabbedPanel ?: return@show
             panel.setInputText(prompt)

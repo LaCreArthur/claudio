@@ -21,7 +21,7 @@ class SendProjectFileAction : AnAction() {
         val file = e.getData(CommonDataKeys.VIRTUAL_FILE) ?: return
         val basePath = project.basePath ?: ""
 
-        val toolWindow = ToolWindowManager.getInstance(project).getToolWindow("Claude") ?: return
+        val toolWindow = ToolWindowManager.getInstance(project).getToolWindow("Claudio") ?: return
 
         if (file.path.startsWith(basePath)) {
             val rel = file.path.removePrefix(basePath).trimStart('/')

@@ -22,5 +22,8 @@ interface RemoteClaudioTestService {
     fun getLastTerminalPromptMatch(): String?
     fun sendTerminalInput(text: String)
     fun dismissActiveDialog()
+    fun answerActiveDialogWithText(text: String)
+    fun dismissPermissionDialogWithChoice(choice: String)
+    fun setTestDefaultModel(model: String)
     fun clearHistory()
 }

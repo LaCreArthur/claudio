@@ -19,7 +19,7 @@ class SendCurrentFileAction : AnAction() {
         val rel = file.path.removePrefix(project.basePath ?: "").trimStart('/')
         val ref = "@$rel:$line"
 
-        val toolWindow = ToolWindowManager.getInstance(project).getToolWindow("Claude") ?: return
+        val toolWindow = ToolWindowManager.getInstance(project).getToolWindow("Claudio") ?: return
         toolWindow.show {
             val content = toolWindow.contentManager.getContent(0) ?: return@show
             val panel = content.component as? ClaudioTabbedPanel ?: return@show

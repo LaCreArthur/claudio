@@ -40,7 +40,7 @@ class SendDiffToClaudeAction : AnAction("Send Uncommitted Diff to Claude") {
                             .notify(project)
                         return@invokeLater
                     }
-                    val tw = ToolWindowManager.getInstance(project).getToolWindow("Claude") ?: return@invokeLater
+                    val tw = ToolWindowManager.getInstance(project).getToolWindow("Claudio") ?: return@invokeLater
                     tw.show {
                         val panel = tw.contentManager.getContent(0)?.component as? ClaudioTabbedPanel ?: return@show
                         panel.setInputText(diff)

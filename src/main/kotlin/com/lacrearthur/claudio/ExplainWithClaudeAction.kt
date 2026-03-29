@@ -41,7 +41,7 @@ class ExplainWithClaudeAction : AnAction() {
         val blameStr = if (blame != null) "\n$blame" else ""
         val prompt = "Explain this ($relativePath:$startLine):$blameStr\n```\n$code\n```"
 
-        val toolWindow = ToolWindowManager.getInstance(project).getToolWindow("Claude") ?: return
+        val toolWindow = ToolWindowManager.getInstance(project).getToolWindow("Claudio") ?: return
         toolWindow.show {
             val content = toolWindow.contentManager.getContent(0) ?: return@show
             val panel = content.component as? ClaudioTabbedPanel ?: return@show

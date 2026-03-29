@@ -90,6 +90,142 @@ class RealClaudeSmokeTest : ClaudioTestBase() {
         }
     }
 
+    // T5 - AskUserQuestion: custom free-text answer.
+    // Asks Claude to use AskUserQuestion with a "Type something else" option (triggers isFreeText).
+    // Test selects the free-text option, types custom text, and verifies Claude receives it.
+    @Test
+    fun `AskUserQuestion free-text answer is sent to Claude`() {
+        withDriver { svc ->
+            waitFor("session ready", timeoutMs = 60_000) { svc.isClaudeSessionReady() }
+            svc.clearHistory()
+
+            svc.sendTerminalInput("Use the AskUserQuestion tool with question 'Pick a color' and options 'Red', 'Blue', 'Type something else'\n")
+
+            // Wait for parser to detect the ☐ prompt
+            waitFor("AskUserQuestion parsed", timeoutMs = 120_000) {
+                svc.getLastParsedQuestionTitle() != null
+            }
+
+            // Wait for dialog to appear
+            waitFor("askUserQuestion dialog", timeoutMs = 30_000) {
+                svc.getActiveDialogType() == "askUserQuestion"
+            }
+
+            // Select free-text option and type custom answer
+            svc.answerActiveDialogWithText("custom-answer-xyz")
+
+            // Verify dialog was dismissed
+            waitFor("dialog dismissed", timeoutMs = 5_000) {
+                svc.getActiveDialogType() == null
+            }
+
+            // Clear echo and wait for Claude to acknowledge our answer
+            Thread.sleep(1_000)
+            svc.clearHistory()
+
+            waitFor("claude acknowledged free-text", timeoutMs = 120_000) {
+                svc.getRecentTerminalTranscript().contains("custom-answer-xyz")
+            }
+            assertTrue(
+                svc.getRecentTerminalTranscript().contains("custom-answer-xyz"),
+                "Claude should echo back the free-text answer. Transcript: ${svc.getRecentTerminalTranscript().take(500)}"
+            )
+        }
+    }
+
+    // T9 - Permission dialog: Always Allow This Session grants session-level auto-allow.
+    // First injection: dialog appears, choose ALLOW_ALWAYS, close.
+    // Second injection: no dialog (tool is now session-allowed, auto-allowed silently).
+    @Test
+    fun `permission Always Allow This Session auto-allows subsequent requests`() {
+        withDriver { svc ->
+            waitFor("session ready", timeoutMs = 60_000) { svc.isClaudeSessionReady() }
+            svc.clearHistory()
+
+            val permissionEvent = """
+                {"hook_event_name":"PermissionRequest","tool_name":"Bash",
+                 "tool_input":{"command":"echo session-allow-test"}}
+            """.trimIndent()
+
+            // First injection: dialog appears, choose Always Allow
+            svc.injectHookEvent(permissionEvent)
+
+            waitFor("permission dialog", timeoutMs = 15_000) {
+                svc.getActiveDialogType() == "permission"
+            }
+
+            svc.dismissPermissionDialogWithChoice("ALLOW_ALWAYS")
+
+            // Wait for response and dialog to close
+            waitFor("allow response recorded", timeoutMs = 10_000) {
+                svc.getLastResponseSent()?.contains("\"behavior\":\"allow\"") == true
+            }
+            waitFor("dialog dismissed", timeoutMs = 5_000) {
+                svc.getActiveDialogType() == null
+            }
+
+            // Reset observable state for second injection
+            svc.clearHistory()
+
+            // Second injection: should be auto-allowed (no dialog)
+            svc.injectHookEvent(permissionEvent)
+
+            // Wait for the response to come back (auto-allowed, no dialog)
+            waitFor("auto-allow response", timeoutMs = 10_000) {
+                svc.getLastResponseSent()?.contains("\"behavior\":\"allow\"") == true
+            }
+
+            // Verify no dialog appeared - activeDialogType should still be null
+            assertNull(svc.getActiveDialogType(),
+                "Second PermissionRequest should be auto-allowed without showing a dialog")
+        }
+    }
+
+    // T8 - Permission dialog: Allow Once sends allow response but does NOT grant session-allow.
+    // Inject PermissionRequest → dialog → dismiss (default = Allow Once) → verify response.
+    // Inject a second PermissionRequest → dialog must appear again (not session-allowed).
+    @Test
+    fun `permission Allow Once sends allow and does not session-allow`() {
+        withDriver { svc ->
+            waitFor("session ready", timeoutMs = 60_000) { svc.isClaudeSessionReady() }
+            svc.clearHistory()
+
+            val permissionEvent = """
+                {"hook_event_name":"PermissionRequest","tool_name":"Bash",
+                 "tool_input":{"command":"echo allow-once-test"}}
+            """.trimIndent()
+
+            // First injection: dialog appears, dismiss with default (Allow Once)
+            svc.injectHookEvent(permissionEvent)
+
+            waitFor("permission dialog", timeoutMs = 15_000) {
+                svc.getActiveDialogType() == "permission"
+            }
+
+            svc.dismissActiveDialog()
+
+            // Wait for response to be recorded (hook handler completes after dialog closes)
+            waitFor("allow response recorded", timeoutMs = 10_000) {
+                svc.getLastResponseSent()?.contains("\"behavior\":\"allow\"") == true
+            }
+            val response = svc.getLastResponseSent()!!
+            assertTrue(response.contains("\"behavior\":\"allow\""),
+                "Allow Once should send allow response. Got: ${response.take(300)}")
+
+            // Reset observable state for second injection
+            svc.clearHistory()
+
+            // Second injection: dialog must appear again (Allow Once != session-allow)
+            svc.injectHookEvent(permissionEvent)
+
+            waitFor("second permission dialog", timeoutMs = 15_000) {
+                svc.getActiveDialogType() == "permission"
+            }
+            assertEquals("permission", svc.getActiveDialogType(),
+                "Second PermissionRequest should show dialog again (Allow Once does not grant session-allow)")
+        }
+    }
+
     // T3 - send a message and get a response
     // Acceptance scenario: send "say exactly: claudio-test-ok" → transcript contains
     //   "claudio-test-ok" from claude's response (not from the terminal echo of our input).

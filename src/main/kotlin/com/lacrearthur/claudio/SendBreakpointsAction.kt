@@ -19,7 +19,7 @@ class SendBreakpointsAction : AnAction() {
         val breakpoints = manager.allBreakpoints.filterIsInstance<XLineBreakpoint<*>>()
 
         if (breakpoints.isEmpty()) {
-            val toolWindow = ToolWindowManager.getInstance(project).getToolWindow("Claude") ?: return
+            val toolWindow = ToolWindowManager.getInstance(project).getToolWindow("Claudio") ?: return
             toolWindow.show {
                 val content = toolWindow.contentManager.getContent(0) ?: return@show
                 val panel = content.component as? ClaudioTabbedPanel ?: return@show
@@ -40,7 +40,7 @@ class SendBreakpointsAction : AnAction() {
 
         val prompt = "Breakpoints (${breakpoints.size}):\n${lines.joinToString("\n")}"
 
-        val toolWindow = ToolWindowManager.getInstance(project).getToolWindow("Claude") ?: return
+        val toolWindow = ToolWindowManager.getInstance(project).getToolWindow("Claudio") ?: return
         toolWindow.show {
             val content = toolWindow.contentManager.getContent(0) ?: return@show
             val panel = content.component as? ClaudioTabbedPanel ?: return@show

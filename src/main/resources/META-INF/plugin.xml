@@ -63,7 +63,7 @@
         <statusBarWidgetFactory implementation="com.lacrearthur.claudio.ClaudioStatusBarWidgetFactory"
                                 id="ClaudioStatus"
                                 order="last"/>
-        <toolWindow id="Claude"
+        <toolWindow id="Claudio"
                     anchor="right"
                     factoryClass="com.lacrearthur.claudio.ClaudeToolWindowFactory"
                     icon="/icons/claudio-icon.svg"

@@ -5,6 +5,10 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
+import com.lacrearthur.claudio.AskUserQuestionDialog
+import com.lacrearthur.claudio.FreeTextQuestionDialog
+import com.lacrearthur.claudio.PermissionChoice
+import com.lacrearthur.claudio.PermissionDialog
 import java.net.HttpURLConnection
 import java.net.URI
 import java.util.concurrent.atomic.AtomicReference
@@ -20,6 +24,7 @@ class ClaudioTestServiceImpl(private val project: Project) : ClaudioTestService 
     private val activeDialog       = AtomicReference<String?>(null)
     private val lastParsedQuestion = AtomicReference<String?>(null)
     private val lastPromptMatch    = AtomicReference<String?>(null)
+    @Volatile var defaultTestModel: String? = null
     @Volatile private var hookPort          = 0
     @Volatile private var sessionReady      = false
     @Volatile private var cliProcessStatus  = "not_started"
@@ -131,6 +136,43 @@ class ClaudioTestServiceImpl(private val project: Project) : ClaudioTestService 
         }
         log.warn("[TEST] dismissActiveDialog: closing ${activeDialog.get()}")
         SwingUtilities.invokeLater { dialog.close(DialogWrapper.OK_EXIT_CODE) }
+    }
+
+    override fun answerActiveDialogWithText(text: String) {
+        val dialog = activeDialogRef.get()
+        if (dialog == null) {
+            log.warn("[TEST] answerActiveDialogWithText: no active dialog")
+            return
+        }
+        log.warn("[TEST] answerActiveDialogWithText: '${text.take(80)}' on ${dialog.javaClass.simpleName}")
+        SwingUtilities.invokeLater {
+            when (dialog) {
+                is FreeTextQuestionDialog -> dialog.setText(text)
+                is AskUserQuestionDialog -> dialog.selectFreeTextAndSetText(text)
+            }
+            dialog.close(DialogWrapper.OK_EXIT_CODE)
+        }
+    }
+
+    override fun dismissPermissionDialogWithChoice(choice: String) {
+        val dialog = activeDialogRef.get()
+        if (dialog == null) {
+            log.warn("[TEST] dismissPermissionDialogWithChoice: no active dialog")
+            return
+        }
+        val permChoice = PermissionChoice.valueOf(choice)
+        log.warn("[TEST] dismissPermissionDialogWithChoice: $permChoice on ${dialog.javaClass.simpleName}")
+        SwingUtilities.invokeLater {
+            if (dialog is PermissionDialog) {
+                dialog.setChoice(permChoice)
+            }
+            dialog.close(DialogWrapper.OK_EXIT_CODE)
+        }
+    }
+
+    override fun setTestDefaultModel(model: String) {
+        defaultTestModel = model
+        log.warn("[TEST] defaultTestModel=$model")
     }
 
     override fun clearHistory() {

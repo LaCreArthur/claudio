@@ -92,7 +92,7 @@ class SendProjectHealthAction : AnAction() {
             append("\n(analysis based on currently open files - open more files to expand coverage)")
         }
 
-        val tw = ToolWindowManager.getInstance(project).getToolWindow("Claude") ?: return
+        val tw = ToolWindowManager.getInstance(project).getToolWindow("Claudio") ?: return
         tw.show {
             val panel = tw.contentManager.getContent(0)?.component as? ClaudioTabbedPanel ?: return@show
             panel.setInputText(text)

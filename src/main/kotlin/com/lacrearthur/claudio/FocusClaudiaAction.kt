@@ -7,6 +7,6 @@ import com.intellij.openapi.wm.ToolWindowManager
 class FocusClaudiaAction : AnAction() {
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
-        ToolWindowManager.getInstance(project).getToolWindow("Claude")?.activate(null)
+        ToolWindowManager.getInstance(project).getToolWindow("Claudio")?.activate(null)
     }
 }

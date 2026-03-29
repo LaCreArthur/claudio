@@ -39,7 +39,7 @@ class SendRecentFilesAction : AnAction() {
         val lines = files.mapIndexed { i, rel -> "${i + 1}. $rel" }
         val text = "Currently open files (${files.size}):\n${lines.joinToString("\n")}"
 
-        val tw = ToolWindowManager.getInstance(project).getToolWindow("Claude") ?: return
+        val tw = ToolWindowManager.getInstance(project).getToolWindow("Claudio") ?: return
         tw.show {
             val panel = tw.contentManager.getContent(0)?.component as? ClaudioTabbedPanel ?: return@show
             panel.setInputText(text)

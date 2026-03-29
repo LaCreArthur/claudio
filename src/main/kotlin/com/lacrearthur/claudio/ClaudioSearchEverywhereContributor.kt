@@ -48,7 +48,7 @@ class ClaudioSearchEverywhereContributor(
     override fun processSelectedItem(selected: String, modifiers: Int, searchText: String): Boolean {
         val query = searchText.trim()
         if (query.isBlank()) return false
-        val tw = ToolWindowManager.getInstance(project).getToolWindow("Claude") ?: return false
+        val tw = ToolWindowManager.getInstance(project).getToolWindow("Claudio") ?: return false
         tw.show {
             val panel = tw.contentManager.getContent(0)?.component as? ClaudioTabbedPanel ?: return@show
             panel.setInputText(query)

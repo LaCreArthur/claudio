@@ -67,7 +67,7 @@ class SendDocumentationAction : AnAction() {
                 val prompt = "Documentation for $label:\n$capped"
                 log.warn("[Claudio] SendDocumentationAction: injecting ${capped.length} chars")
 
-                val toolWindow = ToolWindowManager.getInstance(project).getToolWindow("Claude") ?: return
+                val toolWindow = ToolWindowManager.getInstance(project).getToolWindow("Claudio") ?: return
                 toolWindow.show {
                     val content = toolWindow.contentManager.getContent(0) ?: return@show
                     val panel = content.component as? ClaudioTabbedPanel ?: return@show

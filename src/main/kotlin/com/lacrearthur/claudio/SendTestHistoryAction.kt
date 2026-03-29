@@ -97,7 +97,7 @@ class SendTestHistoryAction : AnAction("Send Test History to Claude") {
             append("\nPlease analyze these test results. Are there patterns in the failures? Why might these tests be flaky?")
         }
 
-        val tw = ToolWindowManager.getInstance(project).getToolWindow("Claude") ?: return
+        val tw = ToolWindowManager.getInstance(project).getToolWindow("Claudio") ?: return
         tw.show {
             val panel = tw.contentManager.getContent(0)?.component as? ClaudioTabbedPanel ?: return@show
             panel.setInputText(prompt)

@@ -80,7 +80,7 @@ class RunInspectionsForClaudeAction : AnAction() {
 
         val text = "IDE inspections for $relPath (${problems.size} problem${if (problems.size == 1) "" else "s"}):\n${problems.joinToString("\n")}"
 
-        val tw = ToolWindowManager.getInstance(project).getToolWindow("Claude") ?: return
+        val tw = ToolWindowManager.getInstance(project).getToolWindow("Claudio") ?: return
         tw.show {
             val panel = tw.contentManager.getContent(0)?.component as? ClaudioTabbedPanel ?: return@show
             panel.setInputText(text)

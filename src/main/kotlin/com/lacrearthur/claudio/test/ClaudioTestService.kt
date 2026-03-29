@@ -49,6 +49,15 @@ interface ClaudioTestService {
     /** Programmatically dismiss the active dialog (OK/accept). For test use only. */
     fun dismissActiveDialog()
 
+    /** Set text in a FreeTextQuestionDialog and close with OK. For test use only. */
+    fun answerActiveDialogWithText(text: String)
+
+    /** Set PermissionChoice on active PermissionDialog and close with OK. Values: "ALLOW_ONCE", "ALLOW_ALWAYS", "DENY". */
+    fun dismissPermissionDialogWithChoice(choice: String)
+
+    /** Set the model to use when launching claude. Must be called before tool window opens. */
+    fun setTestDefaultModel(model: String)
+
     /** Resets all observable state to null/empty. Does NOT reset live session state. */
     fun clearHistory()
 }

@@ -22,7 +22,7 @@ class SendTodosAction : AnAction("Send TODOs to Claude") {
         val todos = collectTodos(project)
         if (todos.isEmpty()) return
         val prompt = buildPrompt(todos)
-        val tw = ToolWindowManager.getInstance(project).getToolWindow("Claude") ?: return
+        val tw = ToolWindowManager.getInstance(project).getToolWindow("Claudio") ?: return
         tw.show {
             val panel = tw.contentManager.getContent(0)?.component as? ClaudioTabbedPanel ?: return@show
             panel.setInputText(prompt)

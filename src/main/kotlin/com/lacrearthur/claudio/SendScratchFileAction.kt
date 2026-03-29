@@ -47,7 +47,7 @@ class SendScratchFileAction : AnAction() {
 
         val formatted = "Scratch file (${vFile.name}):\n$content\n"
 
-        val toolWindow = ToolWindowManager.getInstance(project).getToolWindow("Claude") ?: return
+        val toolWindow = ToolWindowManager.getInstance(project).getToolWindow("Claudio") ?: return
         toolWindow.show {
             val tw = toolWindow.contentManager.getContent(0) ?: return@show
             val panel = tw.component as? ClaudioTabbedPanel ?: return@show

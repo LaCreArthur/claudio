@@ -200,6 +200,14 @@ Always call `annotation.dispose()` after reading (FileAnnotation implements Disp
 - Starter currently downloads IU 261.22158.121 (2026.1 EAP) - version mismatch
 - Fix: use `withVersion("2025.3")` or equivalent in `IdeProductProvider.IU` call
 
+## Development Rules
+
+**Test-first mandate:** Before adding any new feature, all existing E2E tests must pass. `/claudio` runs tests before features - this is the law.
+
+**No auto-deploy:** Never auto-install in Rider or auto-push/tag as part of a development cycle. Build and commit only. Deploy and release are explicit user actions.
+
+**Real E2E = only proof:** Build passing + smoke test passing is not enough. Real E2E tests against the live claude CLI are the only authoritative proof. Synthetic tests cover wiring; real tests cover behavior.
+
 ## Code Style
 
 - Kotlin only (no Java)

@@ -63,7 +63,7 @@ class SendNotificationLogAction : AnAction("Send Notification Log to Claude") {
 
         val recent = captured.takeLast(15)
         if (recent.isEmpty()) {
-            val tw = ToolWindowManager.getInstance(project).getToolWindow("Claude") ?: return
+            val tw = ToolWindowManager.getInstance(project).getToolWindow("Claudio") ?: return
             tw.show {
                 val panel = tw.contentManager.getContent(0)?.component as? ClaudioTabbedPanel
                     ?: return@show
@@ -76,7 +76,7 @@ class SendNotificationLogAction : AnAction("Send Notification Log to Claude") {
         }
 
         val prompt = buildPrompt(recent)
-        val tw = ToolWindowManager.getInstance(project).getToolWindow("Claude") ?: return
+        val tw = ToolWindowManager.getInstance(project).getToolWindow("Claudio") ?: return
         tw.show {
             val panel = tw.contentManager.getContent(0)?.component as? ClaudioTabbedPanel
                 ?: return@show

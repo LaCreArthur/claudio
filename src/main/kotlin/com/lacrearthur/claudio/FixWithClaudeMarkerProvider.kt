@@ -55,7 +55,7 @@ class FixWithClaudeMarkerProvider : LineMarkerProvider {
             { _: PsiElement -> "Fix with Claudio: $hit" },
             { _: MouseEvent, _: PsiElement ->
                 val text = "Fix this error in $fileName:$displayLine\n$hit\n\n"
-                val tw = ToolWindowManager.getInstance(project).getToolWindow("Claude") ?: return@LineMarkerInfo
+                val tw = ToolWindowManager.getInstance(project).getToolWindow("Claudio") ?: return@LineMarkerInfo
                 (tw.contentManager.getContent(0)?.component as? ClaudioTabbedPanel)?.appendToInput(text)
                 tw.activate(null)
             },
