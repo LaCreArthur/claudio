@@ -149,11 +149,15 @@ class HookServer(
         if (toolName in EDIT_TOOLS) {
             val toolInput = extractObject(body, "tool_input")
             val filePath = extractString(toolInput, "file_path")
-            if (filePath != null) {
+            if (filePath != null && filePath !in pendingSnapshots && filePath !in changedFiles) {
+                // Only snapshot the very first time - preserve the original before any edits
                 try {
                     val file = File(filePath)
                     pendingSnapshots[filePath] = if (file.exists()) file.readText() else ""
                 } catch (_: Exception) {}
+            } else if (filePath != null && filePath in changedFiles) {
+                // File was already edited - re-add to pending so VFS listener updates "after"
+                pendingSnapshots[filePath] = changedFiles[filePath]!!.first
             }
         }
         return "{}"

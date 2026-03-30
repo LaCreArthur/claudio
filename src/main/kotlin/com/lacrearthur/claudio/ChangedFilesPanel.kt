@@ -1,10 +1,13 @@
 package com.lacrearthur.claudio
 
 import com.intellij.diff.DiffContentFactory
-import com.intellij.diff.DiffManager
+import com.intellij.diff.chains.SimpleDiffRequestChain
+import com.intellij.diff.editor.ChainDiffVirtualFile
 import com.intellij.diff.requests.SimpleDiffRequest
+import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileTypes.FileTypeManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.ui.JBColor
 import com.intellij.util.ui.JBUI
 import java.awt.*
@@ -66,7 +69,10 @@ class ChangedFilesPanel(
         }
         val undoAllBtn = makeSmallButton("Undo All") {
             for ((path, pair) in hookServer.changedFiles) {
-                try { java.io.File(path).writeText(pair.first) } catch (_: Exception) {}
+                try {
+                    java.io.File(path).writeText(pair.first)
+                    LocalFileSystem.getInstance().findFileByPath(path)?.refresh(false, false)
+                } catch (_: Exception) {}
             }
             hookServer.changedFiles.clear()
             refresh()
@@ -129,35 +135,49 @@ class ChangedFilesPanel(
         val fileName = path.substringAfterLast("/")
         val relDir = path.removePrefix(basePath).trimStart('/').substringBeforeLast("/", "")
         val (added, removed) = countChanges(pair.first, pair.second)
+        val truncDir = if (relDir.length > 40) "...${relDir.takeLast(37)}" else relDir
 
-        val row = JPanel(BorderLayout()).apply {
+        val row = JPanel(GridBagLayout()).apply {
             isOpaque = false
-            border = JBUI.Borders.empty(1, 16, 1, 0)
-            cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+            border = JBUI.Borders.empty(2, 16, 2, 0)
         }
+        val gbc = GridBagConstraints()
 
         val nameLabel = JLabel(fileName).apply {
             font = Font("JetBrains Mono", Font.BOLD, JBUI.scale(11))
             foreground = JBColor(Color(220, 220, 220), Color(220, 220, 220))
+            cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
         }
-        val dirLabel = JLabel("  $relDir").apply {
-            font = Font("JetBrains Mono", Font.PLAIN, JBUI.scale(10))
+        val dirLabel = JLabel("  $truncDir  ").apply {
+            font = Font("JetBrains Mono", Font.PLAIN, JBUI.scale(9))
             foreground = JBColor.GRAY
         }
-        val statsLabel = JLabel("<html><font color='#4caf50'>+$added</font> <font color='#f44336'>-$removed</font></html>").apply {
+        val statsLabel = JLabel("<html><font color='#4caf50'>+$added</font>&nbsp;<font color='#f44336'>-$removed</font></html>").apply {
             font = Font("JetBrains Mono", Font.PLAIN, JBUI.scale(10))
         }
-
-        val left = JPanel(FlowLayout(FlowLayout.LEFT, 0, 0)).apply {
-            isOpaque = false
-            add(nameLabel)
-            add(dirLabel)
+        val keepBtn = makeSmallButton("Keep") {
+            hookServer.changedFiles.remove(path)
+            refresh()
+        }
+        val undoBtn = makeSmallButton("Undo") {
+            try {
+                java.io.File(path).writeText(pair.first)
+                LocalFileSystem.getInstance().findFileByPath(path)?.refresh(false, false)
+            } catch (_: Exception) {}
+            hookServer.changedFiles.remove(path)
+            refresh()
         }
 
-        row.add(left, BorderLayout.WEST)
-        row.add(statsLabel, BorderLayout.EAST)
+        // Name (clickable) | dir (fills space) | stats | Keep | Undo
+        gbc.gridy = 0; gbc.fill = GridBagConstraints.NONE; gbc.anchor = GridBagConstraints.WEST
+        gbc.gridx = 0; gbc.weightx = 0.0; row.add(nameLabel, gbc)
+        gbc.gridx = 1; gbc.weightx = 1.0; gbc.fill = GridBagConstraints.HORIZONTAL; row.add(dirLabel, gbc)
+        gbc.gridx = 2; gbc.weightx = 0.0; gbc.fill = GridBagConstraints.NONE; row.add(statsLabel, gbc)
+        gbc.gridx = 3; gbc.insets = Insets(0, 4, 0, 0); row.add(keepBtn, gbc)
+        gbc.gridx = 4; gbc.insets = Insets(0, 2, 0, 0); row.add(undoBtn, gbc)
 
-        row.addMouseListener(object : MouseAdapter() {
+        // Click file name to open diff tab
+        nameLabel.addMouseListener(object : MouseAdapter() {
             override fun mouseClicked(e: MouseEvent) { showDiff(path, pair) }
             override fun mouseEntered(e: MouseEvent) {
                 nameLabel.foreground = JBColor(Color(100, 160, 255), Color(100, 160, 255))
@@ -176,8 +196,10 @@ class ChangedFilesPanel(
         val factory = DiffContentFactory.getInstance()
         val before = factory.create(project, pair.first, fileType)
         val after = factory.create(project, pair.second, fileType)
-        val request = SimpleDiffRequest(fileName, before, after, "Before", "After")
-        DiffManager.getInstance().showDiff(project, request)
+        val request = SimpleDiffRequest("Claude: $fileName", before, after, "Original", "Modified")
+        val chain = SimpleDiffRequestChain(request)
+        val diffFile = ChainDiffVirtualFile(chain, "Claude: $fileName")
+        FileEditorManager.getInstance(project).openFile(diffFile, true)
     }
 
     private fun toggleCollapse() {
