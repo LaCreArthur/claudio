@@ -184,34 +184,23 @@ class ChangedFilesPanel(
         return row
     }
 
-    private var activeReviewer: InlineDiffReviewer? = null
-
     private fun showDiff(path: String, pair: Pair<String, String>) {
-        // Cleanup any existing reviewer
-        activeReviewer?.cleanup()
+        // Open file and navigate to first changed line.
+        // The native VCS gutter (green/blue bars) already shows uncommitted changes
+        // with click-to-rollback. We just need to get the user there.
+        val vf = LocalFileSystem.getInstance().findFileByPath(path) ?: return
+        val firstChanged = findFirstChangedLine(pair.first, pair.second)
+        val descriptor = com.intellij.openapi.fileEditor.OpenFileDescriptor(project, vf, firstChanged, 0)
+        com.intellij.openapi.fileEditor.FileEditorManager.getInstance(project).openTextEditor(descriptor, true)
+    }
 
-        activeReviewer = InlineDiffReviewer(
-            project = project,
-            path = path,
-            before = pair.first,
-            after = pair.second,
-            onKeepHunk = { /* per-hunk keep - future */ },
-            onUndoHunk = { /* per-hunk undo - future */ },
-            onKeepAll = {
-                hookServer.changedFiles.remove(path)
-                refresh()
-            },
-            onUndoAll = {
-                try {
-                    java.io.File(path).writeText(pair.first)
-                    LocalFileSystem.getInstance().findFileByPath(path)?.refresh(false, false)
-                } catch (_: Exception) {}
-                hookServer.changedFiles.remove(path)
-                refresh()
-            },
-            onDismiss = { activeReviewer = null },
-        )
-        activeReviewer?.show()
+    private fun findFirstChangedLine(before: String, after: String): Int {
+        val oldLines = before.lines()
+        val newLines = after.lines()
+        for (i in newLines.indices) {
+            if (i >= oldLines.size || oldLines[i] != newLines[i]) return i
+        }
+        return 0
     }
 
     private fun toggleCollapse() {
