@@ -10,8 +10,14 @@ import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.TextEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Computable
+import com.intellij.diff.DiffContentFactory
+import com.intellij.diff.DiffManager
+import com.intellij.diff.requests.SimpleDiffRequest
+import com.intellij.openapi.fileTypes.FileTypeManager
+import com.intellij.openapi.vfs.LocalFileSystem
 import org.jetbrains.ide.BuiltInServerManager
 import org.jetbrains.ide.HttpRequestHandler
+import javax.swing.SwingUtilities
 
 private val log = Logger.getInstance("ClaudioIdeMcp")
 
@@ -104,6 +110,8 @@ class IdeMcpServer(
                 """{"type":"object","properties":{},"required":[]}"""),
             mcpTool("getOpenFiles", "Get the list of currently open editor tabs with file paths",
                 """{"type":"object","properties":{},"required":[]}"""),
+            mcpTool("showDiff", "Open the IDE's native diff viewer to compare original and modified file content",
+                """{"type":"object","properties":{"filePath":{"type":"string","description":"Absolute file path"},"before":{"type":"string","description":"Original file content"},"after":{"type":"string","description":"Modified file content"},"title":{"type":"string","description":"Diff viewer title (optional)"}},"required":["filePath","before","after"]}"""),
         ))
         val result = JsonUtils.buildJsonObject("tools" to JsonUtils.RawJson(tools))
         return jsonRpcResult(id, result)
@@ -120,6 +128,7 @@ class IdeMcpServer(
             "getDiagnostics" -> callGetDiagnostics(arguments)
             "getSelection" -> callGetSelection()
             "getOpenFiles" -> callGetOpenFiles()
+            "showDiff" -> callShowDiff(arguments)
             else -> return jsonRpcError(id, -32602, "Unknown tool: $toolName")
         }
 
@@ -197,6 +206,24 @@ class IdeMcpServer(
             if (files.isEmpty()) "No files open"
             else "Open files (${files.size}):\n${files.joinToString("\n") { "- $it" }}"
         }
+    }
+
+    private fun callShowDiff(arguments: String): String {
+        val filePath = JsonUtils.extractString(arguments, "filePath") ?: return "Missing filePath"
+        val before = JsonUtils.extractString(arguments, "before") ?: return "Missing before content"
+        val after = JsonUtils.extractString(arguments, "after") ?: return "Missing after content"
+        val title = JsonUtils.extractString(arguments, "title") ?: filePath.substringAfterLast("/")
+
+        SwingUtilities.invokeLater {
+            val vf = LocalFileSystem.getInstance().findFileByPath(filePath)
+            val fileType = vf?.fileType ?: FileTypeManager.getInstance().getFileTypeByFileName(filePath.substringAfterLast("/"))
+            val factory = DiffContentFactory.getInstance()
+            val beforeContent = factory.create(project, before, fileType)
+            val afterContent = factory.create(project, after, fileType)
+            val request = SimpleDiffRequest(title, beforeContent, afterContent, "Before", "After")
+            DiffManager.getInstance().showDiff(project, request)
+        }
+        return "Diff viewer opened for $filePath"
     }
 
     // ── resources/list ──────────────────────────────────────────────────

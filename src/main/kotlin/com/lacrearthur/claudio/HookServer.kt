@@ -5,6 +5,15 @@ import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
+import com.intellij.diff.DiffContentFactory
+import com.intellij.diff.DiffManager
+import com.intellij.diff.requests.SimpleDiffRequest
+import com.intellij.openapi.fileTypes.FileTypeManager
+import com.intellij.openapi.vfs.LocalFileSystem
+import com.intellij.openapi.vfs.VirtualFileManager
+import com.intellij.openapi.vfs.newvfs.BulkFileListener
+import com.intellij.openapi.vfs.newvfs.events.VFileContentChangeEvent
+import com.intellij.openapi.vfs.newvfs.events.VFileEvent
 import java.io.File
 import java.net.InetSocketAddress
 import java.util.concurrent.CountDownLatch
@@ -36,6 +45,9 @@ class HookServer(
 
     // Session-level allow policy: tools the user said "always allow this session"
     private val sessionAllowed = mutableSetOf<String>()
+
+    // Pre-edit snapshots: file path -> content before edit, for automatic diff viewing
+    private val pendingSnapshots = mutableMapOf<String, String>()
 
     // Project-level persistent allowlist: tools auto-allowed across sessions
     private val projectAllowlist: MutableSet<String> = loadProjectAllowlist()
@@ -80,6 +92,33 @@ class HookServer(
         } catch (e: Exception) {
             log.error("[HOOKS] failed to start server", e)
         }
+
+        // Watch for file changes to show diffs after Edit/Write tools
+        project.messageBus.connect(this).subscribe(
+            VirtualFileManager.VFS_CHANGES,
+            object : BulkFileListener {
+                override fun after(events: List<VFileEvent>) {
+                    for (event in events) {
+                        if (event !is VFileContentChangeEvent) continue
+                        val path = event.path
+                        val before = pendingSnapshots.remove(path) ?: continue
+                        try {
+                            val after = File(path).readText()
+                            if (before == after) continue
+                            val fileName = path.substringAfterLast("/")
+                            val fileType = FileTypeManager.getInstance().getFileTypeByFileName(fileName)
+                            SwingUtilities.invokeLater {
+                                val factory = DiffContentFactory.getInstance()
+                                val beforeContent = factory.create(project, before, fileType)
+                                val afterContent = factory.create(project, after, fileType)
+                                val request = SimpleDiffRequest(fileName, beforeContent, afterContent, "Before", "After")
+                                DiffManager.getInstance().showDiff(project, request)
+                            }
+                        } catch (_: Exception) {}
+                    }
+                }
+            }
+        )
     }
 
     private fun handleEvent(exchange: HttpExchange) {
@@ -95,7 +134,7 @@ class HookServer(
 
         try {
             val response = when (eventName) {
-                "PreToolUse"        -> handlePreToolUse()
+                "PreToolUse"        -> handlePreToolUse(toolName, body)
                 "PermissionRequest" -> handlePermissionRequest(toolName, body)
                 "Notification"      -> handleNotification(body)
                 else                -> "{}"
@@ -107,10 +146,26 @@ class HookServer(
         }
     }
 
-    // ── PreToolUse: silent policy only ──────────────────────────────────────
-    // No UI. Returns {} to let CC apply its own rules.
-    // Future: add IDE-level silent policy (block dangerous patterns, etc.)
-    private fun handlePreToolUse(): String = "{}"
+    // ── PreToolUse: snapshot before edit for automatic diff viewing ────────
+    private val EDIT_TOOLS = setOf("Write", "Edit", "MultiEdit")
+
+    private fun handlePreToolUse(toolName: String?, body: String): String {
+        if (toolName in EDIT_TOOLS) {
+            val toolInput = extractObject(body, "tool_input")
+            val filePath = extractString(toolInput, "file_path")
+            if (filePath != null) {
+                try {
+                    val file = File(filePath)
+                    if (file.exists()) {
+                        pendingSnapshots[filePath] = file.readText()
+                    } else {
+                        pendingSnapshots[filePath] = "" // new file
+                    }
+                } catch (_: Exception) {}
+            }
+        }
+        return "{}"
+    }
 
     // ── PermissionRequest: approval UI ──────────────────────────────────────
     // One of three paths based on tool type:
