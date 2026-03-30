@@ -5,11 +5,6 @@ import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
-import com.intellij.diff.DiffContentFactory
-import com.intellij.diff.DiffManager
-import com.intellij.diff.requests.SimpleDiffRequest
-import com.intellij.openapi.fileTypes.FileTypeManager
-import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.openapi.vfs.newvfs.BulkFileListener
 import com.intellij.openapi.vfs.newvfs.events.VFileContentChangeEvent
@@ -46,8 +41,14 @@ class HookServer(
     // Session-level allow policy: tools the user said "always allow this session"
     private val sessionAllowed = mutableSetOf<String>()
 
-    // Pre-edit snapshots: file path -> content before edit, for automatic diff viewing
+    // Pre-edit snapshots: file path -> content before edit
     private val pendingSnapshots = mutableMapOf<String, String>()
+
+    /** Completed changes: file path -> (before, after) content. UI reads this for the changed files panel. */
+    val changedFiles = mutableMapOf<String, Pair<String, String>>()
+
+    /** Called when a file change is detected after an Edit/Write tool. */
+    var onFileChanged: (() -> Unit)? = null
 
     // Project-level persistent allowlist: tools auto-allowed across sessions
     private val projectAllowlist: MutableSet<String> = loadProjectAllowlist()
@@ -93,11 +94,12 @@ class HookServer(
             log.error("[HOOKS] failed to start server", e)
         }
 
-        // Watch for file changes to show diffs after Edit/Write tools
+        // Watch for file changes after Edit/Write tools - store for changed files panel
         project.messageBus.connect(this).subscribe(
             VirtualFileManager.VFS_CHANGES,
             object : BulkFileListener {
                 override fun after(events: List<VFileEvent>) {
+                    var changed = false
                     for (event in events) {
                         if (event !is VFileContentChangeEvent) continue
                         val path = event.path
@@ -105,17 +107,11 @@ class HookServer(
                         try {
                             val after = File(path).readText()
                             if (before == after) continue
-                            val fileName = path.substringAfterLast("/")
-                            val fileType = FileTypeManager.getInstance().getFileTypeByFileName(fileName)
-                            SwingUtilities.invokeLater {
-                                val factory = DiffContentFactory.getInstance()
-                                val beforeContent = factory.create(project, before, fileType)
-                                val afterContent = factory.create(project, after, fileType)
-                                val request = SimpleDiffRequest(fileName, beforeContent, afterContent, "Before", "After")
-                                DiffManager.getInstance().showDiff(project, request)
-                            }
+                            changedFiles[path] = Pair(before, after)
+                            changed = true
                         } catch (_: Exception) {}
                     }
+                    if (changed) SwingUtilities.invokeLater { onFileChanged?.invoke() }
                 }
             }
         )
@@ -156,11 +152,7 @@ class HookServer(
             if (filePath != null) {
                 try {
                     val file = File(filePath)
-                    if (file.exists()) {
-                        pendingSnapshots[filePath] = file.readText()
-                    } else {
-                        pendingSnapshots[filePath] = "" // new file
-                    }
+                    pendingSnapshots[filePath] = if (file.exists()) file.readText() else ""
                 } catch (_: Exception) {}
             }
         }

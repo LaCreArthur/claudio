@@ -30,6 +30,7 @@ import com.intellij.notification.Notifications
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.icons.AllIcons
 import com.intellij.ui.JBColor
 import com.intellij.util.ui.JBUI
 import com.intellij.openapi.fileChooser.FileChooserFactory
@@ -84,9 +85,9 @@ class ClaudePanel(
                 val g2 = g.create() as Graphics2D
                 try {
                     g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
-                    g2.color = JBColor.GRAY
-                    g2.font = font
-                    g2.drawString("Ask Claude...", insets.left, insets.top + g2.fontMetrics.ascent)
+                    g2.color = JBColor(Color(0xA0, 0xA0, 0xA0), Color(0x6A, 0x6A, 0x70))
+                    g2.font = font.deriveFont(Font.ITALIC)
+                    g2.drawString("Ask Claude... (commands /, files @)", insets.left, insets.top + g2.fontMetrics.ascent)
                 } finally {
                     g2.dispose()
                 }
@@ -156,9 +157,15 @@ class ClaudePanel(
         }
 
         val inputBar = buildInputBar()
+        val changedFilesPanel = ChangedFilesPanel(project, hookServer)
+
+        val bottomPanel = JPanel(BorderLayout()).apply {
+            add(changedFilesPanel, BorderLayout.NORTH)
+            add(inputBar, BorderLayout.SOUTH)
+        }
 
         add(terminalContainer, BorderLayout.CENTER)
-        add(inputBar, BorderLayout.SOUTH)
+        add(bottomPanel, BorderLayout.SOUTH)
 
         activityTimer = Timer(500) { updateStatus() }
         activityTimer.start()
@@ -519,16 +526,47 @@ class ClaudePanel(
     }
 
     private fun buildInputBar(): JPanel {
-        val bar = JPanel(BorderLayout())
-        bar.border = BorderFactory.createCompoundBorder(
-            BorderFactory.createMatteBorder(1, 0, 0, 0, UIManager.getColor("Separator.foreground")),
-            BorderFactory.createEmptyBorder(4, 6, 4, 6),
-        )
+        val borderColor = JBColor(Color(0xD0, 0xD0, 0xD0), Color(0x50, 0x50, 0x54))
+        val arcRadius = JBUI.scale(12)
 
+        // Outer wrapper: margin around the rounded card
+        val wrapper = JPanel(BorderLayout())
+        wrapper.border = BorderFactory.createEmptyBorder(4, 8, 6, 8)
+
+        // The rounded card that contains text area + toolbar
+        val card = object : JPanel(BorderLayout()) {
+            override fun paintComponent(g: Graphics) {
+                val g2 = g.create() as Graphics2D
+                try {
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+                    g2.color = background
+                    g2.fillRoundRect(0, 0, width, height, arcRadius, arcRadius)
+                } finally {
+                    g2.dispose()
+                }
+            }
+
+            override fun paintBorder(g: Graphics) {
+                val g2 = g.create() as Graphics2D
+                try {
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+                    g2.color = borderColor
+                    g2.drawRoundRect(0, 0, width - 1, height - 1, arcRadius, arcRadius)
+                } finally {
+                    g2.dispose()
+                }
+            }
+        }
+        card.isOpaque = false
+        card.border = BorderFactory.createEmptyBorder(6, 10, 4, 10)
+        card.background = JBColor(Color(0xFA, 0xFA, 0xFA), Color(0x2B, 0x2B, 0x2F))
+
+        // --- Text area setup ---
         inputArea.lineWrap = true
         inputArea.wrapStyleWord = true
-        inputArea.font = Font("JetBrains Mono", Font.PLAIN, 13)
-        inputArea.border = BorderFactory.createEmptyBorder(4, 4, 4, 4)
+        inputArea.font = Font("JetBrains Mono", Font.PLAIN, JBUI.scale(13))
+        inputArea.border = BorderFactory.createEmptyBorder(4, 2, 4, 2)
+        inputArea.isOpaque = false
 
         // Enter sends; Cmd+Enter inserts newline
         val sendKey = "send-prompt"
@@ -613,53 +651,71 @@ class ClaudePanel(
             }
         }
 
+        // Scrollable text area - no visible scroll border, card provides the frame
         val scroll = JScrollPane(inputArea)
-        scroll.preferredSize = Dimension(0, 72)
-        scroll.border = BorderFactory.createLineBorder(
-            UIManager.getColor("Component.borderColor") ?: JBColor.GRAY
-        )
+        scroll.preferredSize = Dimension(0, JBUI.scale(68))
+        scroll.border = BorderFactory.createEmptyBorder()
+        scroll.isOpaque = false
+        scroll.viewport.isOpaque = false
 
-        val sendBtn = JButton("Send")
-        sendBtn.addActionListener { sendText(inputArea.text) }
+        // --- Bottom toolbar row ---
+        val toolbarHeight = JBUI.scale(24)
 
-        val histPrevBtn = JButton("<").apply {
-            toolTipText = "Previous prompt (history)"
-            font = MONO_11
-            preferredSize = Dimension(JBUI.scale(28), JBUI.scale(20))
+        val histPrevBtn = JButton(AllIcons.Actions.Back).apply {
+            toolTipText = "Previous prompt"
+            preferredSize = Dimension(toolbarHeight, toolbarHeight)
+            isBorderPainted = false
+            isContentAreaFilled = false
             isFocusable = false
             addActionListener { historyStep(-1) }
         }
-        val histNextBtn = JButton(">").apply {
-            toolTipText = "Next prompt (history)"
-            font = MONO_11
-            preferredSize = Dimension(JBUI.scale(28), JBUI.scale(20))
+        val histNextBtn = JButton(AllIcons.Actions.Forward).apply {
+            toolTipText = "Next prompt"
+            preferredSize = Dimension(toolbarHeight, toolbarHeight)
+            isBorderPainted = false
+            isContentAreaFilled = false
             isFocusable = false
             addActionListener { historyStep(+1) }
         }
 
         statusLabel.font = Font("JetBrains Mono", Font.ITALIC, JBUI.scale(10))
-        statusLabel.foreground = UIManager.getColor("Component.infoForeground") ?: JBColor.GRAY
+        statusLabel.foreground = JBColor(Color(0x90, 0x90, 0x90), Color(0x78, 0x78, 0x80))
 
-        // Input row: [text area] [Send]
-        val inputRow = JPanel(BorderLayout(4, 0))
-        inputRow.add(scroll, BorderLayout.CENTER)
-        inputRow.add(sendBtn, BorderLayout.EAST)
+        modeLabel.font = Font("JetBrains Mono", Font.PLAIN, JBUI.scale(10))
+        modeLabel.foreground = JBColor(Color(0x90, 0x90, 0x90), Color(0x78, 0x78, 0x80))
 
-        // Status row: [<][>] · accept edits              Ready
-        val statusLeft = JPanel(FlowLayout(FlowLayout.LEFT, 2, 0)).apply {
+        val sendBtn = JButton(AllIcons.Actions.Execute).apply {
+            toolTipText = "Send (Enter)"
+            preferredSize = Dimension(JBUI.scale(28), JBUI.scale(28))
+            isBorderPainted = false
+            isContentAreaFilled = false
+            isFocusable = false
+            cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+            addActionListener { sendText(inputArea.text) }
+        }
+
+        val toolbarLeft = JPanel(FlowLayout(FlowLayout.LEFT, JBUI.scale(2), 0)).apply {
+            isOpaque = false
             add(histPrevBtn)
             add(histNextBtn)
             add(modeLabel)
         }
-        val statusRow = JPanel(BorderLayout()).apply {
-            border = BorderFactory.createEmptyBorder(2, 0, 0, 4)
-            add(statusLeft, BorderLayout.WEST)
-            add(statusLabel, BorderLayout.EAST)
+        val toolbarRight = JPanel(FlowLayout(FlowLayout.RIGHT, JBUI.scale(2), 0)).apply {
+            isOpaque = false
+            add(statusLabel)
+            add(sendBtn)
+        }
+        val toolbar = JPanel(BorderLayout()).apply {
+            isOpaque = false
+            border = BorderFactory.createEmptyBorder(2, 0, 0, 0)
+            add(toolbarLeft, BorderLayout.WEST)
+            add(toolbarRight, BorderLayout.EAST)
         }
 
-        bar.add(inputRow, BorderLayout.CENTER)
-        bar.add(statusRow, BorderLayout.SOUTH)
-        return bar
+        card.add(scroll, BorderLayout.CENTER)
+        card.add(toolbar, BorderLayout.SOUTH)
+        wrapper.add(card, BorderLayout.CENTER)
+        return wrapper
     }
 
     override fun dispose() {
