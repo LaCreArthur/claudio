@@ -41,6 +41,9 @@
     <extensions defaultExtensionNs="com.intellij">
         <notificationGroup id="Claudio" displayType="BALLOON" isLogByDefault="true"/>
 
+        <!-- MCP WebSocket handler on IntelliJ's built-in server for /ide integration -->
+        <httpRequestHandler implementation="com.lacrearthur.claudio.IdeWebSocketHandler"/>
+
         <!-- Test observability service: exposes internal state to Driver API stubs during integration tests -->
         <projectService
             serviceInterface="com.lacrearthur.claudio.test.ClaudioTestService"

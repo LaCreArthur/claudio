@@ -98,6 +98,7 @@ class ClaudePanel(
     private lateinit var atFileCompletion: AtFileCompletion
     private val outputParser = CliOutputParser()
     private val hookServer = HookServer(project)
+    private val mcpServer = IdeMcpServer(project)
 
     // Prompt history: up/down arrow recalls previous sends
     private val promptHistory = mutableListOf<String>()
@@ -117,10 +118,15 @@ class ClaudePanel(
         log.warn("[CLAUDE] ClaudePanel init, project=${project.name} basePath=${project.basePath}")
         Disposer.register(parentDisposable, this)
         Disposer.register(this, hookServer)
+        Disposer.register(this, mcpServer)
 
         // Hook-based control plane: structured JSON events from Claude Code
         HookInstaller.install()
         hookServer.start()
+
+        // IDE MCP data plane: CLI auto-discovers via lockfile and connects
+        mcpServer.start()
+        IdeLockfileManager.write(mcpServer.port, project)
 
         try {
             launchClaude()
@@ -221,10 +227,12 @@ class ClaudePanel(
                 } ?: ""
                 val modelFlag = if (effectiveModel.isNotEmpty()) " --model $effectiveModel" else ""
                 val resumeFlag = if (resumeSessionId.isNotEmpty()) " --resume $resumeSessionId" else ""
-                val launchCmd = if (hookServer.port > 0)
-                    "CLAUDIO_HOOK_PORT=${hookServer.port} claude$modelFlag$resumeFlag"
-                else
-                    "claude$modelFlag$resumeFlag"
+                val envVars = buildList {
+                    if (hookServer.port > 0) add("CLAUDIO_HOOK_PORT=${hookServer.port}")
+                }
+                val envPrefix = if (envVars.isNotEmpty()) envVars.joinToString(" ") + " " else ""
+                val ideFlag = if (mcpServer.port > 0) " --ide" else ""
+                val launchCmd = "${envPrefix}claude$modelFlag$resumeFlag$ideFlag"
                 view.createSendTextBuilder().shouldExecute().send(launchCmd)
                 log.warn("[CLAUDE] 'claude' sent")
 
@@ -656,6 +664,7 @@ class ClaudePanel(
 
     override fun dispose() {
         log.warn("[CLAUDE] ClaudePanel disposed")
+        IdeLockfileManager.delete(mcpServer.port)
         activityTimer.stop()
     }
 }
