@@ -1,11 +1,5 @@
 package com.lacrearthur.claudio
 
-import com.intellij.diff.DiffContentFactory
-import com.intellij.diff.chains.SimpleDiffRequestChain
-import com.intellij.diff.editor.ChainDiffVirtualFile
-import com.intellij.diff.requests.SimpleDiffRequest
-import com.intellij.openapi.fileEditor.FileEditorManager
-import com.intellij.openapi.fileTypes.FileTypeManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.ui.JBColor
@@ -190,16 +184,34 @@ class ChangedFilesPanel(
         return row
     }
 
+    private var activeReviewer: InlineDiffReviewer? = null
+
     private fun showDiff(path: String, pair: Pair<String, String>) {
-        val fileName = path.substringAfterLast("/")
-        val fileType = FileTypeManager.getInstance().getFileTypeByFileName(fileName)
-        val factory = DiffContentFactory.getInstance()
-        val before = factory.create(project, pair.first, fileType)
-        val after = factory.create(project, pair.second, fileType)
-        val request = SimpleDiffRequest("Claude: $fileName", before, after, "Original", "Modified")
-        val chain = SimpleDiffRequestChain(request)
-        val diffFile = ChainDiffVirtualFile(chain, "Claude: $fileName")
-        FileEditorManager.getInstance(project).openFile(diffFile, true)
+        // Cleanup any existing reviewer
+        activeReviewer?.cleanup()
+
+        activeReviewer = InlineDiffReviewer(
+            project = project,
+            path = path,
+            before = pair.first,
+            after = pair.second,
+            onKeepHunk = { /* per-hunk keep - future */ },
+            onUndoHunk = { /* per-hunk undo - future */ },
+            onKeepAll = {
+                hookServer.changedFiles.remove(path)
+                refresh()
+            },
+            onUndoAll = {
+                try {
+                    java.io.File(path).writeText(pair.first)
+                    LocalFileSystem.getInstance().findFileByPath(path)?.refresh(false, false)
+                } catch (_: Exception) {}
+                hookServer.changedFiles.remove(path)
+                refresh()
+            },
+            onDismiss = { activeReviewer = null },
+        )
+        activeReviewer?.show()
     }
 
     private fun toggleCollapse() {
