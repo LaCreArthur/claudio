@@ -10,3 +10,9 @@
 [2026-03-30] #claude-cli #ide: Compiled binary uses Bun runtime - requires Netty WebSocket (raw sockets fail silently)
 [2026-03-30] #rider: Open project with: open -a Rider /path/to/project.sln (needs .sln, not directory)
 [2026-03-30] #workflow: Check existing APIs before implementing ANYTHING - jar tf + javap takes 5 min, custom code takes hours
+[2026-04-04] #testing #starter: Tool window ID in tests must match plugin.xml - stale constants compile but NPE at runtime
+[2026-04-04] #testing #edt: BuiltInServerManager.waitForStart() asserts NOT on EDT - use manager.port directly on EDT
+[2026-04-04] #testing #timing: Don't clearHistory before waiting for /model response - slash commands respond in ~500ms
+[2026-04-04] #testing #gradle: Single test via --tests "ClassName.method name" runs in 29s vs 3m for full suite
+[2026-04-04] #testing #remote: @Remote methods must use Array<String> not List<String> for Driver API compatibility
+[2026-04-04] #testing #philosophy: Plugin is the SUT, not the CLI - use synthetic hook injection, assert plugin state
