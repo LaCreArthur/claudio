@@ -16,3 +16,8 @@
 [2026-04-04] #testing #gradle: Single test via --tests "ClassName.method name" runs in 29s vs 3m for full suite
 [2026-04-04] #testing #remote: @Remote methods must use Array<String> not List<String> for Driver API compatibility
 [2026-04-04] #testing #philosophy: Plugin is the SUT, not the CLI - use synthetic hook injection, assert plugin state
+[2026-04-04] #testing #dialog: Dialog dismiss timeout 15s minimum (not 5s) - cross-process @Remote EDT operations are slow
+[2026-04-04] #testing #dialog: Subscription trial popup blocks EDT - use retry pattern for dialog dismiss assertions
+[2026-04-04] #testing #dialog: PermissionDialog.doCancelAction() sets choice=DENY, not null - Cancel = explicit deny
+[2026-04-04] #testing #debug: On failure: read screenshot first, then stacktrace, then fix - never guess-and-retry
+[2026-04-04] #testing #infra: Tier 0 21+ tests hits IDE shutdown timeout - verify failures individually before investigating

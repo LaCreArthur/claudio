@@ -216,6 +216,7 @@ class HookServer(
         SwingUtilities.invokeLater {
             try {
                 val dialog = PlanExitDialog(project)
+                project.withTestService { setActiveDialog("planExit", dialog) }
                 response = if (dialog.showAndGet()) {
                     log.warn("[HOOKS] plan exit: approved")
                     allow()
@@ -226,6 +227,7 @@ class HookServer(
             } catch (e: Exception) {
                 log.warn("[HOOKS] plan exit dialog error: ${e.message}")
             } finally {
+                project.withTestService { setActiveDialog(null) }
                 latch.countDown()
             }
         }

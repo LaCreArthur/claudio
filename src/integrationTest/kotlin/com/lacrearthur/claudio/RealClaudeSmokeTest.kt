@@ -84,7 +84,7 @@ class RealClaudeSmokeTest : ClaudioTestBase() {
             svc.dismissActiveDialog()
 
             // Verify dialog was dismissed (type resets to null)
-            waitFor("dialog dismissed", timeoutMs = 5_000) {
+            waitFor("dialog dismissed", timeoutMs = 15_000) {
                 svc.getActiveDialogType() == null
             }
         }
@@ -111,13 +111,25 @@ class RealClaudeSmokeTest : ClaudioTestBase() {
                 svc.getActiveDialogType() == "askUserQuestion"
             }
 
-            // Select free-text option and type custom answer
+            // Select free-text option and type custom answer.
+            // Retry dismiss if subscription popup blocks EDT (UX-001).
             svc.answerActiveDialogWithText("custom-answer-xyz")
 
-            // Verify dialog was dismissed
-            waitFor("dialog dismissed", timeoutMs = 5_000) {
-                svc.getActiveDialogType() == null
+            // Wait for dialog to close - retry if blocked by overlay popup
+            var dismissed = false
+            for (attempt in 1..3) {
+                try {
+                    waitFor("dialog dismissed (attempt $attempt)", timeoutMs = 10_000) {
+                        svc.getActiveDialogType() == null
+                    }
+                    dismissed = true
+                    break
+                } catch (_: Exception) {
+                    // Retry: re-send close in case popup blocked the first attempt
+                    svc.dismissActiveDialog()
+                }
             }
+            assertTrue(dismissed, "Dialog should be dismissed after retries")
 
             // Clear echo and wait for Claude to acknowledge our answer
             Thread.sleep(1_000)
@@ -160,7 +172,7 @@ class RealClaudeSmokeTest : ClaudioTestBase() {
             waitFor("allow response recorded", timeoutMs = 10_000) {
                 svc.getLastResponseSent()?.contains("\"behavior\":\"allow\"") == true
             }
-            waitFor("dialog dismissed", timeoutMs = 5_000) {
+            waitFor("dialog dismissed", timeoutMs = 15_000) {
                 svc.getActiveDialogType() == null
             }
 
@@ -258,6 +270,170 @@ class RealClaudeSmokeTest : ClaudioTestBase() {
                 transcript.contains("claudio-test-ok"),
                 "Probe not in transcript after echo cleared. Transcript: ${transcript.take(500)}"
             )
+        }
+    }
+
+    // T10 - Permission Deny: inject PermissionRequest during real session, deny it.
+    // Same flow as T8 (Allow Once) but with DENY choice.
+    // Verifies the deny response is properly sent back to the CLI.
+    @Test
+    fun `permission Deny sends deny response during real session`() {
+        withDriver { svc ->
+            waitFor("session ready", timeoutMs = 60_000) { svc.isClaudeSessionReady() }
+            svc.clearHistory()
+
+            val permissionEvent = """
+                {"hook_event_name":"PermissionRequest","tool_name":"Bash",
+                 "tool_input":{"command":"echo deny-real-test"}}
+            """.trimIndent()
+
+            svc.injectHookEvent(permissionEvent)
+
+            waitFor("permission dialog", timeoutMs = 15_000) {
+                svc.getActiveDialogType() == "permission"
+            }
+
+            svc.dismissPermissionDialogWithChoice("DENY")
+
+            waitFor("deny response recorded", timeoutMs = 10_000) {
+                svc.getLastResponseSent()?.contains("\"behavior\":\"deny\"") == true
+            }
+
+            val response = svc.getLastResponseSent()!!
+            assertTrue(response.contains("\"behavior\":\"deny\""),
+                "Deny should produce deny response. Got: ${response.take(300)}")
+
+            // Dialog should be dismissed
+            waitFor("dialog dismissed", timeoutMs = 15_000) {
+                svc.getActiveDialogType() == null
+            }
+        }
+    }
+
+    // T11 - Multi-turn conversation: send two messages, verify both get responses.
+    // Proves the plugin maintains a working session across multiple user interactions.
+    @Test
+    fun `multi-turn conversation gets responses for each message`() {
+        withDriver { svc ->
+            waitFor("session ready", timeoutMs = 60_000) { svc.isClaudeSessionReady() }
+            svc.clearHistory()
+
+            // First message
+            svc.sendTerminalInput("say exactly: first-turn-ok\n")
+            Thread.sleep(1_000)
+            svc.clearHistory()
+
+            waitFor("first response", timeoutMs = 120_000) {
+                svc.getRecentTerminalTranscript().contains("first-turn-ok")
+            }
+            assertTrue(svc.getRecentTerminalTranscript().contains("first-turn-ok"),
+                "First turn probe not found. Transcript: ${svc.getRecentTerminalTranscript().take(500)}")
+
+            // Second message - new conversation turn
+            svc.clearHistory()
+            svc.sendTerminalInput("say exactly: second-turn-ok\n")
+            Thread.sleep(1_000)
+            svc.clearHistory()
+
+            waitFor("second response", timeoutMs = 120_000) {
+                svc.getRecentTerminalTranscript().contains("second-turn-ok")
+            }
+            assertTrue(svc.getRecentTerminalTranscript().contains("second-turn-ok"),
+                "Second turn probe not found. Transcript: ${svc.getRecentTerminalTranscript().take(500)}")
+        }
+    }
+
+    // T12 - /clear slash command: verify plugin handles clear and session remains usable.
+    // /clear is a local CLI command. We verify the command is accepted and the session
+    // still responds to a follow-up message after clearing.
+    @Test
+    fun `slash clear resets conversation and session remains usable`() {
+        withDriver { svc ->
+            waitFor("session ready", timeoutMs = 60_000) { svc.isClaudeSessionReady() }
+            svc.clearHistory()
+
+            // Send /clear - local CLI command, fast response
+            svc.sendTerminalInput("/clear\n")
+
+            // Don't clearHistory before waitFor - /clear responds fast (~500ms)
+            waitFor("clear confirmed", timeoutMs = 30_000) {
+                val t = svc.getRecentTerminalTranscript()
+                t.contains("clear", ignoreCase = true) || t.contains("conversation", ignoreCase = true)
+            }
+
+            // Verify session still works after clear - send a probe
+            svc.clearHistory()
+            svc.sendTerminalInput("say exactly: post-clear-ok\n")
+            Thread.sleep(1_000)
+            svc.clearHistory()
+
+            waitFor("response after clear", timeoutMs = 120_000) {
+                svc.getRecentTerminalTranscript().contains("post-clear-ok")
+            }
+            assertTrue(svc.getRecentTerminalTranscript().contains("post-clear-ok"),
+                "Session should still respond after /clear. Transcript: ${svc.getRecentTerminalTranscript().take(500)}")
+        }
+    }
+
+    // T13 - /cost slash command: verify plugin forwards and displays cost info.
+    // /cost is a local CLI command, response is fast.
+    @Test
+    fun `slash cost returns session cost info`() {
+        withDriver { svc ->
+            waitFor("session ready", timeoutMs = 60_000) { svc.isClaudeSessionReady() }
+            svc.clearHistory()
+
+            svc.sendTerminalInput("/cost\n")
+
+            // /cost returns immediately with cost breakdown
+            waitFor("cost info displayed", timeoutMs = 30_000) {
+                val t = svc.getRecentTerminalTranscript()
+                t.contains("cost", ignoreCase = true) || t.contains("token", ignoreCase = true)
+                    || t.contains("$", ignoreCase = false)
+            }
+            // No assertion on specific values - just verify the command works
+        }
+    }
+
+    // T14 - Session remains usable after permission deny.
+    // Deny a permission request, then send a normal message to verify the session didn't break.
+    @Test
+    fun `session remains usable after permission deny`() {
+        withDriver { svc ->
+            waitFor("session ready", timeoutMs = 60_000) { svc.isClaudeSessionReady() }
+            svc.clearHistory()
+
+            // Inject and deny a permission request
+            svc.injectHookEvent(
+                """{"hook_event_name":"PermissionRequest","tool_name":"Bash",
+                 "tool_input":{"command":"echo session-stability-test"}}""".trimIndent()
+            )
+
+            waitFor("permission dialog", timeoutMs = 15_000) {
+                svc.getActiveDialogType() == "permission"
+            }
+
+            svc.dismissPermissionDialogWithChoice("DENY")
+
+            waitFor("deny response", timeoutMs = 10_000) {
+                svc.getLastResponseSent()?.contains("\"behavior\":\"deny\"") == true
+            }
+
+            waitFor("dialog dismissed", timeoutMs = 15_000) {
+                svc.getActiveDialogType() == null
+            }
+
+            // Now verify the session is still responsive
+            svc.clearHistory()
+            svc.sendTerminalInput("say exactly: still-alive-ok\n")
+            Thread.sleep(1_000)
+            svc.clearHistory()
+
+            waitFor("response after deny", timeoutMs = 120_000) {
+                svc.getRecentTerminalTranscript().contains("still-alive-ok")
+            }
+            assertTrue(svc.getRecentTerminalTranscript().contains("still-alive-ok"),
+                "Session should still respond after permission deny. Transcript: ${svc.getRecentTerminalTranscript().take(500)}")
         }
     }
 

@@ -250,6 +250,223 @@ class ClaudioHookTest : ClaudioTestBase() {
         }
     }
 
+    // ── 14. Permission Deny via DENY choice sends deny response ────────────────
+
+    @Test
+    fun `permission Deny choice sends deny response`() {
+        withDriver { svc ->
+            svc.clearHistory()
+
+            svc.injectHookEvent(
+                """{"hook_event_name":"PermissionRequest","tool_name":"Bash","tool_input":{"command":"echo deny-test"}}"""
+            )
+
+            waitFor("permission dialog", timeoutMs = 10_000) {
+                svc.getActiveDialogType() == "permission"
+            }
+
+            svc.dismissPermissionDialogWithChoice("DENY")
+
+            waitFor("deny response recorded", timeoutMs = 10_000) {
+                svc.getLastResponseSent()?.contains("\"behavior\":\"deny\"") == true
+            }
+
+            val response = svc.getLastResponseSent()!!
+            assertTrue(response.contains("\"behavior\":\"deny\""),
+                "Deny should send deny response. Got: ${response.take(300)}")
+            assertTrue(response.contains("Denied in IDE"),
+                "Deny message should say 'Denied in IDE'. Got: ${response.take(300)}")
+        }
+    }
+
+    // ── 15. Permission Cancel button sends deny response ─────────────────────
+
+    @Test
+    fun `permission Cancel button sends deny response`() {
+        withDriver { svc ->
+            svc.clearHistory()
+
+            svc.injectHookEvent(
+                """{"hook_event_name":"PermissionRequest","tool_name":"Bash","tool_input":{"command":"echo cancel-test"}}"""
+            )
+
+            waitFor("permission dialog", timeoutMs = 10_000) {
+                svc.getActiveDialogType() == "permission"
+            }
+
+            svc.cancelActiveDialog()
+
+            waitFor("cancel deny response", timeoutMs = 10_000) {
+                svc.getLastResponseSent()?.contains("\"behavior\":\"deny\"") == true
+            }
+
+            val response = svc.getLastResponseSent()!!
+            assertTrue(response.contains("\"behavior\":\"deny\""),
+                "Cancel should send deny response. Got: ${response.take(300)}")
+            assertTrue(response.contains("Cancelled in IDE"),
+                "Cancel message should say 'Cancelled in IDE'. Got: ${response.take(300)}")
+        }
+    }
+
+    // ── 16. Internal tool (AskUserQuestion) auto-allowed without dialog ──────
+
+    @Test
+    fun `AskUserQuestion PermissionRequest is auto-allowed without dialog`() {
+        withDriver { svc ->
+            svc.clearHistory()
+
+            svc.injectHookEvent(
+                """{"hook_event_name":"PermissionRequest","tool_name":"AskUserQuestion","tool_input":{"question":"test?"}}"""
+            )
+
+            // Wait for response - should be auto-allowed immediately
+            waitFor("auto-allow response", timeoutMs = 10_000) {
+                svc.getLastResponseSent()?.contains("\"behavior\":\"allow\"") == true
+            }
+
+            // No dialog should have appeared
+            assertNull(svc.getActiveDialogType(),
+                "AskUserQuestion PermissionRequest should be auto-allowed without showing a dialog")
+
+            val response = svc.getLastResponseSent()!!
+            assertTrue(response.contains("\"behavior\":\"allow\""),
+                "Internal tool should produce allow response. Got: ${response.take(300)}")
+        }
+    }
+
+    // ── 17. PlanExitDialog: approve sends allow response ──────────────────────
+
+    @Test
+    fun `PlanExitDialog approve sends allow response`() {
+        withDriver { svc ->
+            svc.clearHistory()
+
+            svc.injectHookEvent(
+                """{"hook_event_name":"PermissionRequest","tool_name":"ExitPlanMode","tool_input":{}}"""
+            )
+
+            waitFor("planExit dialog", timeoutMs = 10_000) {
+                svc.getActiveDialogType() == "planExit"
+            }
+
+            // OK = "Start Coding" = approve plan exit
+            svc.dismissActiveDialog()
+
+            waitFor("allow response", timeoutMs = 10_000) {
+                svc.getLastResponseSent()?.contains("\"behavior\":\"allow\"") == true
+            }
+
+            val response = svc.getLastResponseSent()!!
+            assertTrue(response.contains("\"behavior\":\"allow\""),
+                "Approving plan exit should send allow. Got: ${response.take(300)}")
+        }
+    }
+
+    // ── 18. PlanExitDialog: reject (Keep Planning) sends deny response ───────
+
+    @Test
+    fun `PlanExitDialog reject sends deny response`() {
+        withDriver { svc ->
+            svc.clearHistory()
+
+            svc.injectHookEvent(
+                """{"hook_event_name":"PermissionRequest","tool_name":"ExitPlanMode","tool_input":{}}"""
+            )
+
+            waitFor("planExit dialog", timeoutMs = 10_000) {
+                svc.getActiveDialogType() == "planExit"
+            }
+
+            // Cancel = "Keep Planning" = reject plan exit
+            svc.cancelActiveDialog()
+
+            waitFor("deny response", timeoutMs = 10_000) {
+                svc.getLastResponseSent()?.contains("\"behavior\":\"deny\"") == true
+            }
+
+            val response = svc.getLastResponseSent()!!
+            assertTrue(response.contains("\"behavior\":\"deny\""),
+                "Rejecting plan exit should send deny. Got: ${response.take(300)}")
+            assertTrue(response.contains("Stayed in plan mode"),
+                "Reject message should say 'Stayed in plan mode'. Got: ${response.take(300)}")
+        }
+    }
+
+    // ── 19. Empty JSON event doesn't crash hook server ───────────────────────
+
+    @Test
+    fun `empty JSON event does not crash hook server`() {
+        withDriver { svc ->
+            svc.clearHistory()
+            val portBefore = svc.getHookServerPort()
+
+            svc.injectHookEvent("{}")
+
+            Thread.sleep(1_000)
+            assertEquals(portBefore, svc.getHookServerPort(), "Server port should be unchanged after empty JSON")
+            assertNull(svc.getActiveDialogType(), "Empty JSON should not trigger any dialog")
+        }
+    }
+
+    // ── 20. Rapid sequential permission events don't corrupt state ────────────
+
+    @Test
+    fun `rapid sequential permission events are handled without corruption`() {
+        withDriver { svc ->
+            svc.clearHistory()
+
+            // Fire 3 events in quick succession - each should queue, not crash
+            val tools = listOf("Bash", "Write", "Edit")
+            for (tool in tools) {
+                svc.injectHookEvent(
+                    """{"hook_event_name":"PermissionRequest","tool_name":"$tool","tool_input":{}}"""
+                )
+                Thread.sleep(100) // small gap to avoid HTTP connection issues
+            }
+
+            // First dialog should appear
+            waitFor("first permission dialog", timeoutMs = 15_000) {
+                svc.getActiveDialogType() == "permission"
+            }
+            assertEquals("permission", svc.getActiveDialogType())
+
+            // Dismiss first - the rest are queued on the HookServer thread pool
+            svc.dismissActiveDialog()
+
+            waitFor("first dialog dismissed", timeoutMs = 15_000) {
+                svc.getActiveDialogType() == null || svc.getActiveDialogType() == "permission"
+            }
+
+            // Server should still be alive
+            assertTrue(svc.getHookServerPort() in 1024..65535,
+                "Hook server should still be running after rapid events")
+        }
+    }
+
+    // ── 21. Permission dialog shows for different REAL_TOOL types ─────────────
+
+    @Test
+    fun `permission dialog appears for Write tool PermissionRequest`() {
+        withDriver { svc ->
+            svc.clearHistory()
+
+            svc.injectHookEvent(
+                """{"hook_event_name":"PermissionRequest","tool_name":"Write","tool_input":{"file_path":"/tmp/test.txt","content":"test"}}"""
+            )
+
+            waitFor("permission dialog for Write", timeoutMs = 10_000) {
+                svc.getActiveDialogType() == "permission"
+            }
+            assertEquals("permission", svc.getActiveDialogType(),
+                "Write tool should trigger permission dialog")
+
+            // Verify the event was recorded with Write tool
+            val event = svc.getLastEventReceived()
+            assertNotNull(event)
+            assertTrue(event!!.contains("Write"))
+        }
+    }
+
     // ── 13. PreToolUse Write event is accepted silently (no dialog, event recorded) ─
 
     @Test

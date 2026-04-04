@@ -198,6 +198,16 @@ class ClaudioTestServiceImpl(private val project: Project) : ClaudioTestService 
         changedFilesClearer?.invoke()
     }
 
+    override fun cancelActiveDialog() {
+        val dialog = activeDialogRef.get()
+        if (dialog == null) {
+            log.warn("[TEST] cancelActiveDialog: no active dialog")
+            return
+        }
+        log.warn("[TEST] cancelActiveDialog: cancelling ${activeDialog.get()}")
+        SwingUtilities.invokeLater { dialog.close(DialogWrapper.CANCEL_EXIT_CODE) }
+    }
+
     companion object {
         fun getInstance(project: Project): ClaudioTestServiceImpl = project.service()
     }

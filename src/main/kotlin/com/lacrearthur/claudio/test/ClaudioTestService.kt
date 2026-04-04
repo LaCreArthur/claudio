@@ -69,4 +69,7 @@ interface ClaudioTestService {
 
     /** Clears all tracked changed files. */
     fun clearChangedFiles()
+
+    /** Programmatically cancel the active dialog (Cancel/Escape). For test use only. */
+    fun cancelActiveDialog()
 }

@@ -29,4 +29,5 @@ interface RemoteClaudioTestService {
     fun getChangedFilePaths(): Array<String>
     fun hasChangedFile(path: String): Boolean
     fun clearChangedFiles()
+    fun cancelActiveDialog()
 }

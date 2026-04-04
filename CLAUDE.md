@@ -196,11 +196,13 @@ Use `./gradlew printBundledModules` to discover available module names. Platform
 ./gradlew buildPlugin && ./gradlew realE2ETest        # Tier 1: real Claude CLI (requires auth)
 
 # Install in Rider
+# Note: JAVA_HOME must be set - Java 21 is installed but not linked system-wide
+JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home \
 ./gradlew clean buildPlugin && \
-rm -rf "$HOME/Library/Application Support/JetBrains/Rider2025.3/plugins/claudio" && \
+rm -rf "$HOME/Library/Application Support/JetBrains/Rider2026.1/plugins/claudio" && \
 unzip -oq build/distributions/claudio-*.zip \
-  -d "$HOME/Library/Application Support/JetBrains/Rider2025.3/plugins/" && \
-pkill -f Rider && sleep 2 && open -a Rider
+  -d "$HOME/Library/Application Support/JetBrains/Rider2026.1/plugins/" && \
+pkill -f Rider; sleep 5 && open -a Rider
 ```
 
 **Important:** `buildPlugin` must run before integration tests - they install the ZIP into the test IDE.
