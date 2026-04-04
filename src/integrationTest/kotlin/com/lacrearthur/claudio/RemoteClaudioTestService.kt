@@ -26,4 +26,7 @@ interface RemoteClaudioTestService {
     fun dismissPermissionDialogWithChoice(choice: String)
     fun setTestDefaultModel(model: String)
     fun clearHistory()
+    fun getChangedFilePaths(): Array<String>
+    fun hasChangedFile(path: String): Boolean
+    fun clearChangedFiles()
 }

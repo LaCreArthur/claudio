@@ -231,4 +231,55 @@ class ClaudioHookTest : ClaudioTestBase() {
             assertNull(svc.getActiveDialogType(), "Malformed event should not trigger any dialog")
         }
     }
+
+    // ── 12. changedFiles Remote wiring: clearChangedFiles + getChangedFilePaths ─
+
+    @Test
+    fun `clearChangedFiles and getChangedFilePaths Remote wiring is functional`() {
+        withDriver { svc ->
+            svc.clearChangedFiles()
+
+            val paths = svc.getChangedFilePaths()
+            assertNotNull(paths, "getChangedFilePaths should never return null")
+            assertEquals(0, paths.size, "changedFiles should be empty after clearChangedFiles")
+
+            assertFalse(
+                svc.hasChangedFile("/tmp/claudio-test-changed.txt"),
+                "hasChangedFile should return false for an untracked path"
+            )
+        }
+    }
+
+    // ── 13. PreToolUse Write event is accepted silently (no dialog, event recorded) ─
+
+    @Test
+    fun `PreToolUse Write event is accepted without triggering a dialog`() {
+        withDriver { svc ->
+            svc.clearHistory()
+            svc.clearChangedFiles()
+
+            svc.injectHookEvent(
+                """{"hook_event_name":"PreToolUse","tool_name":"Write","tool_input":{"file_path":"/tmp/claudio-test-changed.txt","content":"new content"}}"""
+            )
+
+            Thread.sleep(1_000)
+
+            // PreToolUse for Write is a silent pass-through - no dialog should appear
+            assertNull(svc.getActiveDialogType(), "PreToolUse Write should not show any dialog")
+
+            // Event should be recorded
+            val event = svc.getLastEventReceived()
+            assertNotNull(event, "PreToolUse Write event should be recorded in history")
+            assertTrue(event!!.contains("Write"), "Recorded event should reference tool_name Write")
+
+            // File is now in pendingSnapshots (awaiting VFS change event), not yet changedFiles
+            // VFS events originate inside the IDE process and cannot be triggered from the test process,
+            // so we verify the pre-condition: changedFiles remains empty at this stage.
+            assertEquals(
+                0,
+                svc.getChangedFilePaths().size,
+                "changedFiles should be empty before a VFS event arrives (file is only in pendingSnapshots)"
+            )
+        }
+    }
 }

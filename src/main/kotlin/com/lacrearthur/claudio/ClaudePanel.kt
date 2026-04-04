@@ -145,6 +145,12 @@ class ClaudePanel(
         // Register terminal line injector for integration tests
         project.withTestService { setTerminalLineInjector { text -> outputParser.feed(text) } }
 
+        // Wire changed-files state for integration tests
+        project.withTestService {
+            changedFilesAccessor = { hookServer.changedFiles }
+            changedFilesClearer = { hookServer.changedFiles.clear() }
+        }
+
         // Parser owns only AskUserQuestion. Permissions are owned by PermissionRequest hook.
         outputParser.onQuestion = { question ->
             log.warn("[CLAUDE] onQuestion fired: title='${question.title}' opts=${question.options.size} thread=${Thread.currentThread().name}")

@@ -39,8 +39,18 @@ class IdeMcpServer(
     fun start() {
         try {
             val manager = BuiltInServerManager.getInstance()
-            manager.waitForStart()
-            builtInPort = manager.port
+            // waitForStart() asserts NOT on EDT. When called from ClaudePanel init (EDT),
+            // use port directly (server starts early in IDE lifecycle, usually ready).
+            if (ApplicationManager.getApplication().isDispatchThread) {
+                builtInPort = try { manager.port } catch (_: Exception) { 0 }
+            } else {
+                manager.waitForStart()
+                builtInPort = manager.port
+            }
+            if (builtInPort <= 0) {
+                log.warn("[MCP] built-in server not ready yet, port=$builtInPort")
+                return
+            }
             val handler = HttpRequestHandler.EP_NAME.extensionList
                 .filterIsInstance<IdeWebSocketHandler>()
                 .firstOrNull()

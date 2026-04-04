@@ -25,6 +25,8 @@ class ClaudioTestServiceImpl(private val project: Project) : ClaudioTestService 
     private val lastParsedQuestion = AtomicReference<String?>(null)
     private val lastPromptMatch    = AtomicReference<String?>(null)
     @Volatile var defaultTestModel: String? = null
+    @Volatile var changedFilesAccessor: (() -> Map<String, Pair<String, String>>)? = null
+    @Volatile var changedFilesClearer: (() -> Unit)? = null
     @Volatile private var hookPort          = 0
     @Volatile private var sessionReady      = false
     @Volatile private var cliProcessStatus  = "not_started"
@@ -182,6 +184,18 @@ class ClaudioTestServiceImpl(private val project: Project) : ClaudioTestService 
         lastParsedQuestion.set(null)
         lastPromptMatch.set(null)
         synchronized(transcriptLock) { transcriptBuffer.clear() }
+    }
+
+    override fun getChangedFilePaths(): Array<String> {
+        return changedFilesAccessor?.invoke()?.keys?.toTypedArray() ?: emptyArray()
+    }
+
+    override fun hasChangedFile(path: String): Boolean {
+        return changedFilesAccessor?.invoke()?.containsKey(path) == true
+    }
+
+    override fun clearChangedFiles() {
+        changedFilesClearer?.invoke()
     }
 
     companion object {

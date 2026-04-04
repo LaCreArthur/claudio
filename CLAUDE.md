@@ -1,29 +1,70 @@
 # CLAUDE.md
 
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 ## Project: Claudio
 
 JetBrains plugin that embeds the `claude` CLI in a TerminalView widget with native IDE UX layered on top. Full Sonnet 4.6 / Opus 4.6 access via Max/Pro subscription - no API key needed.
 
 **Repo:** `LaCreArthur/claudio`
 
+**Pure Kotlin + Swing. No Java, no TypeScript, no npm.**
+
 ## Architecture
 
-```
-src/main/kotlin/com/lacrearthur/claudio/
-├── ClaudeToolWindowFactory.kt   # ClaudePanel: terminal + input bar + hook wiring
-├── HookServer.kt                # HTTP server - routes PreToolUse/PermissionRequest/Notification
-├── HookInstaller.kt             # Writes hook script + registers in ~/.claude/settings.json
-├── CliOutputParser.kt           # Terminal text parser (fallback for AskUserQuestion only)
-├── ClaudePathFilter.kt          # Clickable file paths in terminal output
-├── SendSelectionAction.kt       # Cmd+Alt+K: editor selection to input bar
-├── SlashCommandCompletion.kt    # Slash command autocomplete popup
-├── SlashCommandRenderer.kt      # Popup cell renderer
-src/main/resources/
-├── META-INF/plugin.xml          # Plugin manifest
-├── icons/                       # SVG/PNG icons
-```
+All source: `src/main/kotlin/com/lacrearthur/claudio/`
 
-**Pure Kotlin + Swing. No Java, no TypeScript, no npm.**
+### Core (terminal + hooks + control plane)
+- `ClaudeToolWindowFactory.kt` - registers the "Claude" tool window
+- `ClaudePanel.kt` - per-tab panel: terminal lifecycle, hook wiring, output listener, input bar
+- `ClaudioTabbedPanel.kt` - multi-tab container (each tab = independent ClaudePanel/claude session)
+- `HookServer.kt` - HTTP server routing PreToolUse/PermissionRequest/Notification from claude hooks
+- `HookInstaller.kt` - writes claudio-hook.sh + registers in ~/.claude/settings.json
+- `CliOutputParser.kt` - terminal text parser (fallback for AskUserQuestion `☐` pattern only)
+
+### Dialogs (native IDE UI replacing terminal prompts)
+- `PermissionDialog.kt` - tool approval (Allow Once / Always Allow / Deny)
+- `AskUserQuestionDialog.kt` - multiple-choice from AskUserQuestion tool
+- `FreeTextQuestionDialog.kt` - free-text input variant
+- `PlanExitDialog.kt` - plan mode exit confirmation
+- `PresetEditorDialog.kt` - prompt preset editor
+
+### IDE context senders (Send*Action pattern - ~20 actions)
+All follow the same pattern: gather IDE context, format as text, send to Claude input bar.
+- `SendSelectionAction.kt` (Cmd+Alt+K), `SendCurrentFileAction.kt`, `SendDiffToClaudeAction.kt`
+- `SendCoverageGapsAction.kt`, `SendTestHistoryAction.kt`, `SendLastRunOutputAction.kt`
+- `SendBreakpointsAction.kt`, `SendDebuggerContextAction.kt`, `SendCallHierarchyAction.kt`
+- `SendHierarchyAction.kt`, `SendUsagesAction.kt`, `SendParameterInfoAction.kt`
+- Plus: BookmarksAction, LiveTemplatesAction, DocumentationAction, FoldingMapAction, TodosAction, ModuleGraphAction, RunConfigsAction, ScratchFileAction, NotificationLogAction, ProjectFileAction, RecentFilesAction, BuildTasksAction, ProjectHealthAction, BranchSnapshotAction, FileHistoryAction, VcsSelectionHistoryAction, InlayHintsAction, RunInspectionsAction
+
+### IDE integration
+- `IdeMcpServer.kt` - MCP server over WebSocket (ws://127.0.0.1:<port>/api/claudio/mcp), exposes IDE capabilities (diagnostics, showDiff) to Claude CLI
+- `IdeWebSocketHandler.kt` - WebSocket transport for MCP
+- `IdeLockfileManager.kt` - writes ~/.claude/ide/<port>.lock for CLI discovery
+- `ChangedFilesPanel.kt` - collapsible panel showing files changed by Claude with click-to-diff
+- `SessionLoader.kt` - reads ~/.claude/ session history for resume
+- `ClaudePreset.kt` - saved prompt presets
+- `ClaudePathFilter.kt` - clickable file paths in terminal output
+- `ClaudioStatusBarWidget.kt` - status bar indicator
+- `ClaudioSearchEverywhereContributor.kt` - search everywhere integration
+
+### Completions
+- `SlashCommandCompletion.kt` + `SlashCommandRenderer.kt` - slash command autocomplete
+- `AtFileCompletion.kt` - @file autocomplete from project index
+
+### Error gutter
+- `FixWithClaudeMarkerProvider.kt` - gutter icon on errors
+- `AskClaudeAboutErrorIntention.kt` - intention action
+- `ExplainWithClaudeAction.kt` - explain selection
+- `RunFailureListener.kt` - auto-detect test/build failures
+- `FocusClaudiaAction.kt` - focus the Claude tool window
+
+### Utilities
+- `JsonUtils.kt` - minimal JSON helpers (no library dependency)
+
+### Test infrastructure (ships with plugin, never called in production)
+- `test/ClaudioTestService.kt` - interface exposing internal state to Driver API
+- `test/ClaudioTestServiceImpl.kt` - project service impl, wiring hooks for observability
 
 ### How It Works
 
@@ -142,20 +183,27 @@ Use `./gradlew printBundledModules` to discover available module names. Platform
 ## Commands
 
 ```bash
+# Build
 ./gradlew clean buildPlugin      # Build plugin ZIP (build/distributions/)
 ./gradlew compileKotlin          # Quick compile check
 ./gradlew clean runIde           # Debug in sandbox IDEA
-```
 
-### Install in Rider
+# Unit tests (no IDE, fast)
+./gradlew test                   # HookScriptSubprocessTest, BuildVerificationTest, PlaceholderTest
 
-```bash
+# Integration tests (launches real IDEA 2025.3 via Starter + Driver)
+./gradlew buildPlugin && ./gradlew integrationTest   # Tier 0: synthetic (no Claude CLI needed)
+./gradlew buildPlugin && ./gradlew realE2ETest        # Tier 1: real Claude CLI (requires auth)
+
+# Install in Rider
 ./gradlew clean buildPlugin && \
 rm -rf "$HOME/Library/Application Support/JetBrains/Rider2025.3/plugins/claudio" && \
 unzip -oq build/distributions/claudio-*.zip \
   -d "$HOME/Library/Application Support/JetBrains/Rider2025.3/plugins/" && \
 pkill -f Rider && sleep 2 && open -a Rider
 ```
+
+**Important:** `buildPlugin` must run before integration tests - they install the ZIP into the test IDE.
 
 ## Key Decisions
 
@@ -164,6 +212,28 @@ pkill -f Rider && sleep 2 && open -a Rider
 - **Hooks as control plane, not terminal parsing**: Structured JSON events from CC hooks drive permissions and state. Parser is fallback only.
 - **Pure Kotlin + Swing.** Gradle is the only build system.
 - **Native dialogs over terminal prompts**: PermissionRequest hook shows IntelliJ DialogWrapper, returns structured decision. Terminal never shows the prompt.
+
+## Test Structure
+
+```
+src/test/                                        # Unit tests (./gradlew test)
+├── kotlin/.../HookScriptSubprocessTest.kt       # Hook script forwards JSON, silent when no port
+├── kotlin/.../e2e/BuildVerificationTest.kt      # Plugin ZIP structure validation
+└── java/.../PlaceholderTest.java                # Infrastructure smoke
+
+src/integrationTest/                             # Integration tests (./gradlew integrationTest | realE2ETest)
+├── kotlin/.../ClaudioTestBase.kt                # Base: Starter + Driver setup, IDE boot, trust prompt handling
+├── kotlin/.../RemoteClaudioTestService.kt       # @Remote stub (16 methods) bridging test -> plugin process
+├── kotlin/.../ClaudioHookTest.kt                # Tier 0 (11 tests): hook routing, permission dialog, parser, malformed JSON
+├── kotlin/.../RealClaudeSmokeTest.kt            # Tier 1 @Tag("realE2E") (7 tests): real CLI round-trips
+└── testData/test-project/                       # Minimal project for IDEA to open
+```
+
+**Tier 0** (`integrationTest`): Launches IDEA, injects synthetic hook events via HTTP, asserts on plugin state. No Claude CLI needed.
+
+**Tier 1** (`realE2ETest`): Same IDE setup + real Claude CLI. Sends actual prompts, waits for responses, tests permission flows end-to-end. Requires `claude` CLI installed and authenticated. Uses Haiku by default for cost.
+
+**Test service pattern:** `ClaudioTestServiceImpl` is a project service that ships with the plugin. `ClaudePanel` wires callbacks into it (hook port, transcript, session state, dialog refs). Tests call it via `RemoteClaudioTestService` (@Remote stub) across the Driver process boundary.
 
 ## Integration Tests (JetBrains Starter + Driver)
 
@@ -207,6 +277,21 @@ Always call `annotation.dispose()` after reading (FileAnnotation implements Disp
 **No auto-deploy:** Never auto-install in Rider or auto-push/tag as part of a development cycle. Build and commit only. Deploy and release are explicit user actions.
 
 **Real E2E = only proof:** Build passing + smoke test passing is not enough. Real E2E tests against the live claude CLI are the only authoritative proof. Synthetic tests cover wiring; real tests cover behavior.
+
+## Local Vision (E2E visual assertions)
+
+**Model:** Qwen3-VL-32B-Instruct-5bit (MLX) via LM Studio at `http://localhost:1234/v1`
+**CLI:** `llm` (pipx) + `llm-lmstudio` plugin
+
+```bash
+# Describe a screenshot
+./scripts/vision-describe.sh /tmp/screenshot.png "What dialogs are visible?"
+
+# Assert a visual condition (exit 0=YES, 1=NO, 2=error)
+./scripts/vision-assert.sh /tmp/screenshot.png "Is there a permission dialog visible?"
+```
+
+Use state assertions (`svc.getActiveDialogType()`) first. Use vision only for what state can't verify: button labels, visual layout, ANSI-rendered content, icons/colors.
 
 ## Code Style
 

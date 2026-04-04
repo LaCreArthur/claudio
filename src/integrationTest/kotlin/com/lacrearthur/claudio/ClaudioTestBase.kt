@@ -37,7 +37,7 @@ abstract class ClaudioTestBase {
     protected lateinit var context: IDETestContext
 
     companion object {
-        const val TOOL_WINDOW_ID = "Claude"
+        const val TOOL_WINDOW_ID = "Claudio"
     }
 
     @BeforeEach

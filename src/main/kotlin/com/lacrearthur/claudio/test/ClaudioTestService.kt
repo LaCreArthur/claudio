@@ -60,4 +60,13 @@ interface ClaudioTestService {
 
     /** Resets all observable state to null/empty. Does NOT reset live session state. */
     fun clearHistory()
+
+    /** Paths of files currently tracked as changed by Claude. Empty list if none. */
+    fun getChangedFilePaths(): Array<String>
+
+    /** True if the given path is tracked in changed files. */
+    fun hasChangedFile(path: String): Boolean
+
+    /** Clears all tracked changed files. */
+    fun clearChangedFiles()
 }

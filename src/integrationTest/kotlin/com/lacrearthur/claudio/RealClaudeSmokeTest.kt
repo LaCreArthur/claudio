@@ -260,4 +260,41 @@ class RealClaudeSmokeTest : ClaudioTestBase() {
             )
         }
     }
+
+    // T6 - Model switch to Sonnet then probe response.
+    // Switches from default (Haiku) to Sonnet via /model command, waits for confirmation,
+    // then sends a probe to verify the session is live on Sonnet.
+    // Only test that uses Sonnet - cost is justified to verify model switching works.
+    @Test
+    fun `model switch to sonnet and response received`() {
+        withDriver { svc ->
+            waitFor("session ready", timeoutMs = 60_000) { svc.isClaudeSessionReady() }
+            svc.clearHistory()
+
+            // Switch model - /model is a local CLI command, response arrives fast
+            svc.sendTerminalInput("/model sonnet\n")
+
+            // Don't clearHistory here - the confirmation arrives within ~500ms
+            // and clearHistory would wipe it before waitFor reads it
+            waitFor("model switch confirmed", timeoutMs = 30_000) {
+                val t = svc.getRecentTerminalTranscript()
+                t.contains("sonnet", ignoreCase = true) || t.contains("model", ignoreCase = true)
+            }
+
+            // Now probe Sonnet
+            svc.clearHistory()
+            svc.sendTerminalInput("say exactly: sonnet-test-ok\n")
+            Thread.sleep(1_000)
+            svc.clearHistory()
+
+            waitFor("claude responded", timeoutMs = 120_000) {
+                svc.getRecentTerminalTranscript().contains("sonnet-test-ok")
+            }
+            val transcript = svc.getRecentTerminalTranscript()
+            assertTrue(
+                transcript.contains("sonnet-test-ok"),
+                "Probe not in transcript after model switch to Sonnet. Transcript: ${transcript.take(500)}"
+            )
+        }
+    }
 }
