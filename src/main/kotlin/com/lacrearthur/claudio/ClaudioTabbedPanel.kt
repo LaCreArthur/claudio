@@ -69,10 +69,15 @@ class ClaudioTabbedPanel(
         override fun actionPerformed(e: AnActionEvent) {
             val component = e.inputEvent?.component as? JComponent ?: return
             val customPresets = PresetStore.load().toMutableList()
-            val menu = JPopupMenu()
-            for (preset in DEFAULT_PRESETS + customPresets) {
-                menu.add(JMenuItem(preset.name).apply {
-                    addActionListener {
+            val allItems = (DEFAULT_PRESETS + customPresets).map { it.name } + listOf("---", "Edit presets...")
+            com.intellij.openapi.ui.popup.JBPopupFactory.getInstance()
+                .createPopupChooserBuilder(allItems)
+                .setItemChosenCallback { chosen ->
+                    if (chosen == "Edit presets...") {
+                        val mutable = PresetStore.load().toMutableList()
+                        PresetEditorDialog(project, mutable).show()
+                    } else if (chosen != "---") {
+                        val preset = (DEFAULT_PRESETS + customPresets).firstOrNull { it.name == chosen } ?: return@setItemChosenCallback
                         addTab(model = preset.model)
                         val newIdx = tabbedPane.selectedIndex
                         if (newIdx >= 0) {
@@ -80,16 +85,9 @@ class ClaudioTabbedPanel(
                         }
                         appendToInput(preset.systemPrompt)
                     }
-                })
-            }
-            menu.addSeparator()
-            menu.add(JMenuItem("Edit presets...").apply {
-                addActionListener {
-                    val mutable = PresetStore.load().toMutableList()
-                    PresetEditorDialog(project, mutable).show()
                 }
-            })
-            menu.show(component, 0, component.height)
+                .createPopup()
+                .showUnderneathOf(component)
         }
     }
 
@@ -126,12 +124,12 @@ class ClaudioTabbedPanel(
     private inner class AddDirectoryAction : AnAction("Add Directory", "Add directory via /add-dir", AllIcons.Nodes.Folder) {
         override fun getActionUpdateThread() = ActionUpdateThread.BGT
         override fun actionPerformed(e: AnActionEvent) {
-            val chooser = JFileChooser(project.basePath).apply {
-                fileSelectionMode = JFileChooser.DIRECTORIES_ONLY
-                dialogTitle = "Add Directory"
-            }
-            if (chooser.showOpenDialog(this@ClaudioTabbedPanel) == JFileChooser.APPROVE_OPTION) {
-                setInputText("/add-dir ${chooser.selectedFile.absolutePath}")
+            val descriptor = com.intellij.openapi.fileChooser.FileChooserDescriptor(
+                false, true, false, false, false, false
+            ).withTitle("Add Directory")
+            val baseDir = project.basePath?.let { LocalFileSystem.getInstance().findFileByPath(it) }
+            com.intellij.openapi.fileChooser.FileChooser.chooseFile(descriptor, project, baseDir) { chosen ->
+                setInputText("/add-dir ${chosen.path}")
             }
         }
     }
@@ -176,26 +174,27 @@ class ClaudioTabbedPanel(
     private fun showSessionPicker(anchor: JComponent) {
         ApplicationManager.getApplication().executeOnPooledThread {
             val sessions = SessionLoader.loadSessions(project)
-            SwingUtilities.invokeLater {
+            ApplicationManager.getApplication().invokeLater {
                 if (sessions.isEmpty()) {
                     JOptionPane.showMessageDialog(anchor, "No previous sessions found.", "Sessions", JOptionPane.INFORMATION_MESSAGE)
                     return@invokeLater
                 }
-                val popup = JPopupMenu()
-                for (session in sessions.take(20)) {
-                    val time = SessionLoader.formatTimestamp(session.lastModified)
-                    val label = "${session.name.take(50)}  ($time)"
-                    popup.add(JMenuItem(label).apply {
-                        toolTipText = session.sessionId
-                        addActionListener {
-                            addTab(
-                                resumeSessionId = session.sessionId,
-                                tabName = session.name.take(30),
-                            )
-                        }
-                    })
+                data class SessionItem(val label: String, val session: SessionInfo)
+                val items = sessions.take(20).map { s ->
+                    val time = SessionLoader.formatTimestamp(s.lastModified)
+                    SessionItem("${s.name.take(50)}  ($time)", s)
                 }
-                popup.show(anchor, 0, anchor.height)
+                com.intellij.openapi.ui.popup.JBPopupFactory.getInstance()
+                    .createPopupChooserBuilder(items)
+                    .setRenderer(com.intellij.ui.SimpleListCellRenderer.create("") { it.label })
+                    .setItemChosenCallback { item ->
+                        addTab(
+                            resumeSessionId = item.session.sessionId,
+                            tabName = item.session.name.take(30),
+                        )
+                    }
+                    .createPopup()
+                    .showUnderneathOf(anchor)
             }
         }
     }
@@ -204,22 +203,24 @@ class ClaudioTabbedPanel(
         ApplicationManager.getApplication().executeOnPooledThread {
             val checkpoints = SessionLoader.loadCheckpoints(project)
             val historyDir = SessionLoader.getHistoryDir(project)
-            SwingUtilities.invokeLater {
+            ApplicationManager.getApplication().invokeLater {
                 if (checkpoints.isEmpty() || historyDir == null) {
                     JOptionPane.showMessageDialog(anchor, "No checkpoints found.", "Rewind", JOptionPane.INFORMATION_MESSAGE)
                     return@invokeLater
                 }
-                val popup = JPopupMenu()
-                for (cp in checkpoints.take(20)) {
+                data class CheckpointItem(val label: String, val checkpoint: CheckpointInfo)
+                val items = checkpoints.take(20).map { cp ->
                     val time = SessionLoader.formatTimestamp(cp.epochMillis)
                     val fileCount = cp.files.size
                     val preview = cp.files.take(3).joinToString(", ") { File(it.filePath).name }
-                    val label = "$time  ($fileCount files: $preview)"
-                    popup.add(JMenuItem(label).apply {
-                        addActionListener { showCheckpointDetail(cp, historyDir) }
-                    })
+                    CheckpointItem("$time  ($fileCount files: $preview)", cp)
                 }
-                popup.show(anchor, 0, anchor.height)
+                com.intellij.openapi.ui.popup.JBPopupFactory.getInstance()
+                    .createPopupChooserBuilder(items)
+                    .setRenderer(com.intellij.ui.SimpleListCellRenderer.create("") { it.label })
+                    .setItemChosenCallback { item -> showCheckpointDetail(item.checkpoint, historyDir) }
+                    .createPopup()
+                    .showUnderneathOf(anchor)
             }
         }
     }

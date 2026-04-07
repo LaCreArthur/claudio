@@ -9,7 +9,7 @@ import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.wm.ToolWindowManager
-import javax.swing.SwingUtilities
+
 
 /**
  * Right-click in any editor -> "Send File History to Claude"
@@ -28,7 +28,7 @@ class SendFileHistoryAction : AnAction("Send File History to Claude") {
 
         ApplicationManager.getApplication().executeOnPooledThread {
             val output = runGitLogFile(basePath, relativePath)
-            SwingUtilities.invokeLater {
+            ApplicationManager.getApplication().invokeLater {
                 if (output == null) {
                     NotificationGroupManager.getInstance()
                         .getNotificationGroup("Claudio")

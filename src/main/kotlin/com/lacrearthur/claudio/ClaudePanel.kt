@@ -159,7 +159,7 @@ class ClaudePanel(
             else showAskUserDialog(question)
         }
         outputParser.onPermissionMode = { mode ->
-            SwingUtilities.invokeLater { modeLabel.text = " · $mode" }
+            ApplicationManager.getApplication().invokeLater { modeLabel.text = " · $mode" }
         }
 
         val inputBar = buildInputBar()
@@ -181,7 +181,7 @@ class ClaudePanel(
 
     private fun showError(msg: String) {
         log.error("[CLAUDE] showError: $msg")
-        SwingUtilities.invokeLater {
+        ApplicationManager.getApplication().invokeLater {
             terminalContainer.removeAll()
             terminalContainer.add(buildErrorPanel(msg), BorderLayout.CENTER)
             terminalContainer.revalidate()
@@ -267,7 +267,7 @@ class ClaudePanel(
                     setCliProcessStatus("exited(0)")
                 }
                 delay(1500)
-                SwingUtilities.invokeLater { launchClaude() }
+                ApplicationManager.getApplication().invokeLater { launchClaude() }
             } catch (e: CancellationException) {
                 throw e  // Never swallow cancellation - coroutines contract
             } catch (e: Throwable) {
@@ -305,7 +305,7 @@ class ClaudePanel(
     private fun showAskUserDialog(question: ParsedQuestion) {
         log.warn("[CLAUDE] showAskUserDialog: title='${question.title}' options=${question.options.size}")
         project.withTestService { setActiveDialog("askUserQuestion") }
-        SwingUtilities.invokeLater {
+        ApplicationManager.getApplication().invokeLater {
             val dialog = AskUserQuestionDialog(project, question)
             project.withTestService { setActiveDialog("askUserQuestion", dialog) }
             try {
@@ -321,7 +321,7 @@ class ClaudePanel(
     private fun showFreeTextDialog(question: ParsedQuestion) {
         log.warn("[CLAUDE] showFreeTextDialog: title='${question.title}'")
         project.withTestService { setActiveDialog("askUserQuestion") }
-        SwingUtilities.invokeLater {
+        ApplicationManager.getApplication().invokeLater {
             val dialog = FreeTextQuestionDialog(project, question)
             project.withTestService { setActiveDialog("askUserQuestion", dialog) }
             try {
@@ -378,7 +378,7 @@ class ClaudePanel(
     }
 
     private fun updateStatusText(text: String) {
-        SwingUtilities.invokeLater {
+        ApplicationManager.getApplication().invokeLater {
             statusLabel.text = " $text"
             val nowReady = text == "Ready"
             if (wasGenerating && nowReady) notifyIfUnfocused()

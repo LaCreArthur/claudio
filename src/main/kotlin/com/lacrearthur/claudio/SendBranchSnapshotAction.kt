@@ -7,7 +7,7 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.wm.ToolWindowManager
-import javax.swing.SwingUtilities
+
 
 /**
  * Tools > Send Branch Snapshot to Claude
@@ -23,7 +23,7 @@ class SendBranchSnapshotAction : AnAction("Send Branch Snapshot to Claude") {
 
         ApplicationManager.getApplication().executeOnPooledThread {
             val snapshot = buildSnapshot(basePath)
-            SwingUtilities.invokeLater {
+            ApplicationManager.getApplication().invokeLater {
                 if (snapshot == null) {
                     NotificationGroupManager.getInstance()
                         .getNotificationGroup("Claudio")

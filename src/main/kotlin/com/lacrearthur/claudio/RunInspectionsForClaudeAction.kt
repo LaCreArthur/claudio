@@ -54,11 +54,11 @@ class RunInspectionsForClaudeAction : AnAction() {
         val highlighters = markupModel.allHighlighters
         val problems = highlighters.mapNotNull { h ->
             val info = HighlightInfo.fromRangeHighlighter(h) ?: return@mapNotNull null
-            if (info.severity.myVal < HighlightSeverity.WARNING.myVal) return@mapNotNull null
+            if (info.severity < HighlightSeverity.WARNING) return@mapNotNull null
             val startOffset = info.startOffset
             if (startOffset < 0 || startOffset > document.textLength) return@mapNotNull null
             val line = document.getLineNumber(startOffset) + 1
-            val severity = if (info.severity.myVal >= HighlightSeverity.ERROR.myVal) "error" else "warning"
+            val severity = if (info.severity >= HighlightSeverity.ERROR) "error" else "warning"
             val message = (info.description ?: info.toolTip ?: "").trim()
                 .replace(Regex("<[^>]+>"), "") // strip HTML tags from toolTip
                 .ifEmpty { return@mapNotNull null }

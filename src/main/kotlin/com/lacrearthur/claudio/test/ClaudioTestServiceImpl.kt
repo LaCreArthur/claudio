@@ -12,7 +12,7 @@ import com.lacrearthur.claudio.PermissionDialog
 import java.net.HttpURLConnection
 import java.net.URI
 import java.util.concurrent.atomic.AtomicReference
-import javax.swing.SwingUtilities
+import com.intellij.openapi.application.ApplicationManager
 
 private val log = Logger.getInstance("ClaudioTestService")
 
@@ -137,7 +137,7 @@ class ClaudioTestServiceImpl(private val project: Project) : ClaudioTestService 
             return
         }
         log.warn("[TEST] dismissActiveDialog: closing ${activeDialog.get()}")
-        SwingUtilities.invokeLater { dialog.close(DialogWrapper.OK_EXIT_CODE) }
+        ApplicationManager.getApplication().invokeLater { dialog.close(DialogWrapper.OK_EXIT_CODE) }
     }
 
     override fun answerActiveDialogWithText(text: String) {
@@ -147,7 +147,7 @@ class ClaudioTestServiceImpl(private val project: Project) : ClaudioTestService 
             return
         }
         log.warn("[TEST] answerActiveDialogWithText: '${text.take(80)}' on ${dialog.javaClass.simpleName}")
-        SwingUtilities.invokeLater {
+        ApplicationManager.getApplication().invokeLater {
             when (dialog) {
                 is FreeTextQuestionDialog -> dialog.setText(text)
                 is AskUserQuestionDialog -> dialog.selectFreeTextAndSetText(text)
@@ -164,7 +164,7 @@ class ClaudioTestServiceImpl(private val project: Project) : ClaudioTestService 
         }
         val permChoice = PermissionChoice.valueOf(choice)
         log.warn("[TEST] dismissPermissionDialogWithChoice: $permChoice on ${dialog.javaClass.simpleName}")
-        SwingUtilities.invokeLater {
+        ApplicationManager.getApplication().invokeLater {
             if (dialog is PermissionDialog) {
                 dialog.setChoice(permChoice)
             }

@@ -1,6 +1,10 @@
 package com.lacrearthur.claudio
 
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.sun.net.httpserver.HttpExchange
@@ -14,7 +18,6 @@ import java.net.InetSocketAddress
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
-import javax.swing.SwingUtilities
 
 private val log = Logger.getInstance("ClaudioHooks")
 
@@ -111,7 +114,7 @@ class HookServer(
                             changed = true
                         } catch (_: Exception) {}
                     }
-                    if (changed) SwingUtilities.invokeLater { onFileChanged?.invoke() }
+                    if (changed) ApplicationManager.getApplication().invokeLater { onFileChanged?.invoke() }
                 }
             }
         )
@@ -123,16 +126,20 @@ class HookServer(
             exchange.requestBody.bufferedReader().readText()
         } catch (e: Exception) { sendResponse(exchange, 400, "{}"); return }
 
-        val eventName = extractString(body, "hook_event_name") ?: ""
-        val toolName  = extractString(body, "tool_name")
+        val root = try {
+            JsonParser.parseString(body).asJsonObject
+        } catch (e: Exception) { sendResponse(exchange, 400, "{}"); return }
+
+        val eventName = root.get("hook_event_name")?.asString ?: ""
+        val toolName  = root.get("tool_name")?.asString
         log.warn("[HOOKS] $eventName${toolName?.let { ":$it" } ?: ""}")
         project.withTestService { recordEvent(body) }
 
         try {
             val response = when (eventName) {
-                "PreToolUse"        -> handlePreToolUse(toolName, body)
-                "PermissionRequest" -> handlePermissionRequest(toolName, body)
-                "Notification"      -> handleNotification(body)
+                "PreToolUse"        -> handlePreToolUse(toolName, root)
+                "PermissionRequest" -> handlePermissionRequest(toolName, root)
+                "Notification"      -> handleNotification(root)
                 else                -> "{}"
             }
             sendResponse(exchange, 200, response)
@@ -145,10 +152,10 @@ class HookServer(
     // ── PreToolUse: snapshot before edit for automatic diff viewing ────────
     private val EDIT_TOOLS = setOf("Write", "Edit", "MultiEdit")
 
-    private fun handlePreToolUse(toolName: String?, body: String): String {
+    private fun handlePreToolUse(toolName: String?, root: JsonObject): String {
         if (toolName in EDIT_TOOLS) {
-            val toolInput = extractObject(body, "tool_input")
-            val filePath = extractString(toolInput, "file_path")
+            val toolInput = root.getAsJsonObject("tool_input")
+            val filePath = toolInput?.get("file_path")?.asString
             if (filePath != null && filePath !in pendingSnapshots && filePath !in changedFiles) {
                 // Only snapshot the very first time - preserve the original before any edits
                 try {
@@ -179,7 +186,7 @@ class HookServer(
     private val PLAN_EXIT_TOOLS = setOf("ExitPlanMode")
     private val REAL_TOOLS      = setOf("Bash", "Write", "Edit", "Read", "MultiEdit", "NotebookEdit", "WebSearch", "WebFetch")
 
-    private fun handlePermissionRequest(toolName: String?, body: String): String {
+    private fun handlePermissionRequest(toolName: String?, root: JsonObject): String {
         val tool = toolName ?: ""
 
         if (tool in INTERNAL_TOOLS) {
@@ -202,7 +209,7 @@ class HookServer(
         }
 
         if (tool in REAL_TOOLS) {
-            return showApprovalDialog(tool, body)
+            return showApprovalDialog(tool, root)
         }
 
         // Unknown tool: let CC's native permission system decide
@@ -213,7 +220,7 @@ class HookServer(
     private fun handlePlanExit(): String {
         val latch = CountDownLatch(1)
         var response = deny("Stayed in plan mode")
-        SwingUtilities.invokeLater {
+        ApplicationManager.getApplication().invokeLater({
             try {
                 val dialog = PlanExitDialog(project)
                 project.withTestService { setActiveDialog("planExit", dialog) }
@@ -230,16 +237,16 @@ class HookServer(
                 project.withTestService { setActiveDialog(null) }
                 latch.countDown()
             }
-        }
+        }, ModalityState.any())
         latch.await(120, TimeUnit.SECONDS)
         return response
     }
 
-    private fun showApprovalDialog(tool: String, body: String): String {
-        val toolInput = extractObject(body, "tool_input")
+    private fun showApprovalDialog(tool: String, root: JsonObject): String {
+        val toolInput = root.getAsJsonObject("tool_input") ?: JsonObject()
         val latch = CountDownLatch(1)
         var response = deny("Cancelled in IDE")
-        SwingUtilities.invokeLater {
+        ApplicationManager.getApplication().invokeLater({
             try {
                 val request = PermissionRequest(
                     action = formatAction(tool),
@@ -269,14 +276,14 @@ class HookServer(
                 project.withTestService { setActiveDialog(null) }
                 latch.countDown()
             }
-        }
+        }, ModalityState.any())
         latch.await(120, TimeUnit.SECONDS)
         return response
     }
 
     // ── Notification: observability ──────────────────────────────────────────
-    private fun handleNotification(body: String): String {
-        val notificationType = extractString(body, "notification_type")
+    private fun handleNotification(root: JsonObject): String {
+        val notificationType = root.get("notification_type")?.asString
         log.warn("[HOOKS] notification: $notificationType")
         return "{}"
     }
@@ -322,19 +329,16 @@ class HookServer(
             else           -> "use $tool"
         }
 
-        private fun formatDetail(tool: String, input: String): String = when (tool) {
+        private fun formatDetail(tool: String, input: JsonObject): String = when (tool) {
             "Write", "Edit", "Read", "MultiEdit" ->
-                extractString(input, "file_path") ?: input.take(300)
+                input.get("file_path")?.asString ?: input.toString().take(300)
             "Bash" ->
-                extractString(input, "command") ?: input.take(300)
+                input.get("command")?.asString ?: input.toString().take(300)
             "WebSearch" ->
-                extractString(input, "query") ?: input.take(300)
+                input.get("query")?.asString ?: input.toString().take(300)
             "WebFetch" ->
-                extractString(input, "url") ?: input.take(300)
-            else -> input.take(300)
+                input.get("url")?.asString ?: input.toString().take(300)
+            else -> input.toString().take(300)
         }
-
-        fun extractString(json: String, key: String): String? = JsonUtils.extractString(json, key)
-        fun extractObject(json: String, key: String): String = JsonUtils.extractObject(json, key)
     }
 }

@@ -45,8 +45,8 @@ class SendProjectHealthAction : AnAction() {
             for (h in markupModel.allHighlighters) {
                 val info = HighlightInfo.fromRangeHighlighter(h) ?: continue
                 when {
-                    info.severity.myVal >= HighlightSeverity.ERROR.myVal -> errors++
-                    info.severity.myVal >= HighlightSeverity.WARNING.myVal -> warnings++
+                    info.severity >= HighlightSeverity.ERROR -> errors++
+                    info.severity >= HighlightSeverity.WARNING -> warnings++
                 }
             }
             if (errors > 0 || warnings > 0) {

@@ -5,6 +5,8 @@ import com.intellij.openapi.ui.DialogWrapper
 import java.awt.Component
 import java.awt.Dimension
 import java.awt.Font
+import com.intellij.ui.components.JBScrollPane
+import com.intellij.ui.components.JBTextArea
 import javax.swing.*
 
 class FreeTextQuestionDialog(
@@ -12,7 +14,7 @@ class FreeTextQuestionDialog(
     private val question: ParsedQuestion,
 ) : DialogWrapper(project) {
 
-    private val textArea = JTextArea(4, 40)
+    private val textArea = JBTextArea(4, 40)
 
     init {
         title = "Claude: ${question.title}"
@@ -41,7 +43,7 @@ class FreeTextQuestionDialog(
         )
         textArea.alignmentX = Component.LEFT_ALIGNMENT
 
-        val scroll = JScrollPane(textArea).apply {
+        val scroll = JBScrollPane(textArea).apply {
             alignmentX = Component.LEFT_ALIGNMENT
             preferredSize = Dimension(420, 100)
         }

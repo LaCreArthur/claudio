@@ -68,7 +68,8 @@ class SendBuildTasksAction : AnAction() {
             }
             // Deduplicate by name (multi-module projects repeat common tasks)
             tasks.distinctBy { it.name }
-        } catch (_: Exception) {
+        } catch (_: Throwable) {
+            // Catches NoClassDefFoundError when Gradle plugin is disabled
             emptyList()
         }
     }

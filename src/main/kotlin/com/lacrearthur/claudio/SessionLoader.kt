@@ -1,5 +1,7 @@
 package com.lacrearthur.claudio
 
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import java.io.BufferedReader
@@ -48,7 +50,7 @@ object SessionLoader {
             .map { file ->
                 val sid = file.nameWithoutExtension
                 val meta = sessionMeta[sid]
-                val name = meta?.optString("name")
+                val name = meta?.get("name")?.asString
                     ?: extractFirstUserMessage(file)
                     ?: sid.take(8)
                 SessionInfo(
@@ -61,14 +63,14 @@ object SessionLoader {
             .sortedByDescending { it.lastModified }
     }
 
-    private fun loadSessionMeta(): Map<String, JsonObj> {
+    private fun loadSessionMeta(): Map<String, JsonObject> {
         val dir = File(System.getProperty("user.home"), ".claude/sessions")
         if (!dir.isDirectory) return emptyMap()
-        val map = mutableMapOf<String, JsonObj>()
+        val map = mutableMapOf<String, JsonObject>()
         (dir.listFiles(FileFilter { it.extension == "json" }) ?: emptyArray()).forEach { file ->
             try {
-                val obj = JsonObj(file.readText())
-                val sid = obj.optString("sessionId") ?: return@forEach
+                val obj = JsonParser.parseString(file.readText()).asJsonObject
+                val sid = obj.get("sessionId")?.asString ?: return@forEach
                 map[sid] = obj
             } catch (_: Exception) {}
         }
@@ -83,10 +85,12 @@ object SessionLoader {
                     val line = reader.readLine() ?: break
                     count++
                     if (!line.contains("\"type\":\"user\"")) continue
-                    val obj = JsonObj(line)
-                    if (obj.optString("type") != "user") continue
-                    val message = obj.optObj("message") ?: continue
-                    val content = message.optString("content") ?: continue
+                    val obj = try {
+                        JsonParser.parseString(line).asJsonObject
+                    } catch (_: Exception) { continue }
+                    if (obj.get("type")?.asString != "user") continue
+                    val message = obj.getAsJsonObject("message") ?: continue
+                    val content = message.get("content")?.asString ?: continue
                     val clean = commandTagRegex.replace(content, "").trim()
                         .lineSequence()
                         .firstOrNull { it.isNotBlank() && !it.startsWith("Caveat:") }
@@ -119,16 +123,18 @@ object SessionLoader {
                 while (reader.readLine().also { line = it } != null) {
                     val l = line ?: continue
                     if (!l.contains("\"file-history-snapshot\"")) continue
-                    val obj = JsonObj(l)
-                    if (obj.optString("type") != "file-history-snapshot") continue
+                    val obj = try {
+                        JsonParser.parseString(l).asJsonObject
+                    } catch (_: Exception) { continue }
+                    if (obj.get("type")?.asString != "file-history-snapshot") continue
                     // Skip incremental updates - only show primary checkpoints
-                    if (l.contains("\"isSnapshotUpdate\":true")) continue
+                    val snapshot = obj.getAsJsonObject("snapshot") ?: continue
+                    if (snapshot.get("isSnapshotUpdate")?.asBoolean == true) continue
 
-                    val snapshot = obj.optObj("snapshot") ?: continue
-                    val timestamp = snapshot.optString("timestamp") ?: continue
+                    val timestamp = snapshot.get("timestamp")?.asString ?: continue
 
-                    // Extract backed-up files from the raw JSON
-                    val files = extractBackedUpFiles(l, historyDir)
+                    // Extract backed-up files from the parsed snapshot
+                    val files = extractBackedUpFiles(snapshot, historyDir)
                     if (files.isEmpty()) continue
 
                     val epochMs = parseIsoTimestamp(timestamp)
@@ -141,31 +147,16 @@ object SessionLoader {
         return checkpoints.sortedByDescending { it.epochMillis }
     }
 
-    /** Extract files with actual backups (backupFileName != null) from a snapshot JSON line. */
-    private fun extractBackedUpFiles(line: String, historyDir: File): List<CheckpointFile> {
+    /** Extract files with actual backups from a parsed snapshot object. */
+    private fun extractBackedUpFiles(snapshot: JsonObject, historyDir: File): List<CheckpointFile> {
         val files = mutableListOf<CheckpointFile>()
-        // Find trackedFileBackups object and extract entries
-        val marker = "\"trackedFileBackups\":"
-        val idx = line.indexOf(marker)
-        if (idx < 0) return files
-
-        val afterMarker = line.substring(idx + marker.length).trimStart()
-        if (!afterMarker.startsWith('{')) return files
-
-        val end = JsonUtils.findClosingBrace(afterMarker, 0)
-        if (end <= 1) return files // empty object {}
-
-        val backupsJson = afterMarker.substring(0, end + 1)
-
-        // Parse file entries: "path/to/file": {"backupFileName": "hash@v1", "version": 1, ...}
-        val entryRegex = Regex(""""([^"]+)":\s*\{[^}]*"backupFileName":\s*"([^"]+)"[^}]*"version":\s*(\d+)""")
-        for (match in entryRegex.findAll(backupsJson)) {
-            val filePath = match.groupValues[1]
-            val backupName = match.groupValues[2]
-            val version = match.groupValues[3].toIntOrNull() ?: 1
-            // Only include if backup file actually exists
+        val backups = snapshot.getAsJsonObject("trackedFileBackups") ?: return files
+        for ((path, entry) in backups.entrySet()) {
+            val entryObj = try { entry.asJsonObject } catch (_: Exception) { continue }
+            val backupName = entryObj.get("backupFileName")?.asString ?: continue
+            val version = entryObj.get("version")?.asInt ?: 1
             if (File(historyDir, backupName).exists()) {
-                files.add(CheckpointFile(filePath, backupName, version))
+                files.add(CheckpointFile(path, backupName, version))
             }
         }
         return files

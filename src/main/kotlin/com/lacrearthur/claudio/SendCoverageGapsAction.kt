@@ -17,6 +17,18 @@ class SendCoverageGapsAction : AnAction("Send Uncovered Methods to Claude") {
 
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
+        try {
+            doActionPerformed(project)
+        } catch (_: Throwable) {
+            // Catches NoClassDefFoundError when coverage plugin is disabled
+            NotificationGroupManager.getInstance()
+                .getNotificationGroup("Claudio")
+                .createNotification("Coverage plugin is not available", NotificationType.WARNING)
+                .notify(project)
+        }
+    }
+
+    private fun doActionPerformed(project: com.intellij.openapi.project.Project) {
         val bundle = CoverageDataManager.getInstance(project).currentSuitesBundle ?: run {
             NotificationGroupManager.getInstance()
                 .getNotificationGroup("Claudio")

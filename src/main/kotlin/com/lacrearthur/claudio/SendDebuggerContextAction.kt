@@ -17,7 +17,7 @@ import com.intellij.xdebugger.frame.XValueNode
 import com.intellij.xdebugger.frame.XValuePlace
 import com.intellij.xdebugger.frame.presentation.XValuePresentation
 import javax.swing.Icon
-import javax.swing.SwingUtilities
+
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
@@ -47,7 +47,7 @@ class SendDebuggerContextAction : AnAction() {
             val varStr = frame?.let { collectVariables(it) } ?: ""
             val prompt = "Debugger paused in \"$sessionName\" at $posStr. Help me debug this.$varStr"
 
-            SwingUtilities.invokeLater {
+            ApplicationManager.getApplication().invokeLater {
                 val toolWindow = ToolWindowManager.getInstance(project).getToolWindow("Claudio") ?: return@invokeLater
                 toolWindow.show {
                     val content = toolWindow.contentManager.getContent(0) ?: return@show

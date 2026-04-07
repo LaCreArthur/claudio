@@ -1,10 +1,17 @@
 package com.lacrearthur.claudio
 
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.DialogWrapper
+import com.intellij.ui.SimpleListCellRenderer
+import com.intellij.ui.ToolbarDecorator
+import com.intellij.ui.components.JBList
+import com.intellij.ui.components.JBScrollPane
+import com.intellij.ui.components.JBTextArea
+import com.intellij.ui.components.JBTextField
+import com.intellij.util.ui.JBUI
 import java.awt.BorderLayout
 import java.awt.Dimension
-import java.awt.FlowLayout
 import java.awt.Font
 import javax.swing.*
 
@@ -14,29 +21,19 @@ internal class PresetEditorDialog(
 ) : DialogWrapper(project, true) {
 
     private val listModel = DefaultListModel<String>()
-    private val presetList = JList(listModel)
-    private val nameField = JTextField()
-    private val promptArea = JTextArea(8, 40).apply {
+    private val presetList = JBList(listModel)
+    private val nameField = JBTextField()
+    private val promptArea = JBTextArea(8, 40).apply {
         lineWrap = true
         wrapStyleWord = true
-        font = Font("JetBrains Mono", Font.PLAIN, 12)
+        font = Font("JetBrains Mono", Font.PLAIN, JBUI.scale(12))
     }
     private val modelOptions = arrayOf("", "claude-opus-4-6", "claude-sonnet-4-6", "claude-haiku-4-5-20251001")
-    private val modelCombo = JComboBox(modelOptions).apply {
-        font = Font("JetBrains Mono", Font.PLAIN, 12)
-        setRenderer(object : DefaultListCellRenderer() {
-            override fun getListCellRendererComponent(list: JList<*>, value: Any?, index: Int, isSelected: Boolean, cellHasFocus: Boolean): java.awt.Component {
-                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus)
-                text = if (value == "") "Default" else value as String
-                return this
-            }
-        })
+    private val modelCombo = ComboBox(modelOptions).apply {
+        renderer = SimpleListCellRenderer.create("") { if (it == "") "Default" else it }
     }
-    private val addBtn = JButton("Add")
-    private val editBtn = JButton("Save")
-    private val deleteBtn = JButton("Delete")
+    private val saveBtn = JButton("Save")
 
-    // Index into the unified list: 0..DEFAULT_PRESETS.lastIndex are built-ins
     private val allPresets: List<ClaudePreset> get() = DEFAULT_PRESETS + customPresets
     private var selectedIndex = -1
 
@@ -47,25 +44,20 @@ internal class PresetEditorDialog(
         presetList.addListSelectionListener {
             if (!it.valueIsAdjusting) onSelectionChanged()
         }
-        editBtn.isEnabled = false
-        deleteBtn.isEnabled = false
+        saveBtn.isEnabled = false
         modelCombo.isEnabled = false
-        addBtn.addActionListener { onAdd() }
-        editBtn.addActionListener { onSave() }
-        deleteBtn.addActionListener { onDelete() }
+        saveBtn.addActionListener { onSave() }
     }
 
     override fun createCenterPanel(): JComponent {
-        val leftPanel = JPanel(BorderLayout()).apply {
-            preferredSize = Dimension(180, 0)
-            add(JScrollPane(presetList), BorderLayout.CENTER)
-            val btnPanel = JPanel(FlowLayout(FlowLayout.LEFT, 2, 2)).apply {
-                add(addBtn)
-                add(editBtn)
-                add(deleteBtn)
+        val listPanel = ToolbarDecorator.createDecorator(presetList)
+            .setAddAction { onAdd() }
+            .setRemoveAction { onDelete() }
+            .setRemoveActionUpdater { selectedIndex >= DEFAULT_PRESETS.size }
+            .disableUpDownActions()
+            .createPanel().apply {
+                preferredSize = Dimension(180, 0)
             }
-            add(btnPanel, BorderLayout.SOUTH)
-        }
 
         val rightPanel = JPanel(BorderLayout(0, 4)).apply {
             border = BorderFactory.createEmptyBorder(0, 8, 0, 0)
@@ -82,15 +74,17 @@ internal class PresetEditorDialog(
                     add(modelCombo, BorderLayout.CENTER)
                 }
                 add(modelPanel)
+                add(Box.createVerticalStrut(4))
+                add(saveBtn)
             }
             add(topFields, BorderLayout.NORTH)
             add(JLabel("System prompt:"), BorderLayout.CENTER)
-            add(JScrollPane(promptArea), BorderLayout.SOUTH)
+            add(JBScrollPane(promptArea), BorderLayout.SOUTH)
         }
 
         val split = JPanel(BorderLayout(8, 0))
         split.border = BorderFactory.createEmptyBorder(8, 8, 8, 8)
-        split.add(leftPanel, BorderLayout.WEST)
+        split.add(listPanel, BorderLayout.WEST)
         split.add(rightPanel, BorderLayout.CENTER)
         return split
     }
@@ -110,8 +104,7 @@ internal class PresetEditorDialog(
             promptArea.isEditable = false
             modelCombo.selectedItem = ""
             modelCombo.isEnabled = false
-            editBtn.isEnabled = false
-            deleteBtn.isEnabled = false
+            saveBtn.isEnabled = false
             return
         }
         val preset = allPresets[selectedIndex]
@@ -122,8 +115,7 @@ internal class PresetEditorDialog(
         nameField.isEditable = !isBuiltIn
         promptArea.isEditable = !isBuiltIn
         modelCombo.isEnabled = !isBuiltIn
-        editBtn.isEnabled = !isBuiltIn
-        deleteBtn.isEnabled = !isBuiltIn
+        saveBtn.isEnabled = !isBuiltIn
     }
 
     private fun onAdd() {
@@ -159,7 +151,6 @@ internal class PresetEditorDialog(
     }
 
     override fun doOKAction() {
-        // Auto-save any pending edit
         if (selectedIndex >= DEFAULT_PRESETS.size) onSave()
         PresetStore.save(customPresets)
         super.doOKAction()

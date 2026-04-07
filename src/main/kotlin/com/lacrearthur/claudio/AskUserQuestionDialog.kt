@@ -6,6 +6,7 @@ import java.awt.Component
 import java.awt.Dimension
 import java.awt.event.FocusAdapter
 import java.awt.event.FocusEvent
+import com.intellij.ui.components.JBTextField
 import javax.swing.*
 
 class AskUserQuestionDialog(
@@ -14,7 +15,7 @@ class AskUserQuestionDialog(
 ) : DialogWrapper(project) {
 
     private var selectedIndex = 0
-    private val freeTextField = JTextField(30)
+    private val freeTextField = JBTextField(30)
 
     init {
         title = "Claude: ${question.title}"

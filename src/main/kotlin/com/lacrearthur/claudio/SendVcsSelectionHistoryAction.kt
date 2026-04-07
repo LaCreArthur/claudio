@@ -9,7 +9,7 @@ import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.wm.ToolWindowManager
-import javax.swing.SwingUtilities
+
 
 /**
  * Right-click any selection (or current line) → "Send Selection History to Claude"
@@ -40,7 +40,7 @@ class SendVcsSelectionHistoryAction : AnAction("Send Selection History to Claude
 
         ApplicationManager.getApplication().executeOnPooledThread {
             val output = runGitLogL(basePath, startLine, endLine, relativePath)
-            SwingUtilities.invokeLater {
+            ApplicationManager.getApplication().invokeLater {
                 if (output == null) {
                     NotificationGroupManager.getInstance()
                         .getNotificationGroup("Claudio")

@@ -1,5 +1,8 @@
 package com.lacrearthur.claudio
 
+import com.google.gson.Gson
+import com.google.gson.GsonBuilder
+import com.google.gson.reflect.TypeToken
 import java.io.File
 
 internal data class ClaudePreset(val name: String, val systemPrompt: String, val model: String = "")
@@ -18,37 +21,17 @@ internal object PresetStore {
         return try {
             val text = file.readText().trim()
             if (text.isEmpty() || text == "[]") return emptyList()
-            // Parse: [{"name":"...","systemPrompt":"..."},...]
-            val results = mutableListOf<ClaudePreset>()
-            var remaining = text.trimStart('[').trimEnd(']').trim()
-            while (remaining.isNotEmpty()) {
-                val objEnd = JsonUtils.findClosingBrace(remaining, 0)
-                if (objEnd < 0) break
-                val obj = remaining.substring(0, objEnd + 1)
-                remaining = remaining.substring(objEnd + 1).trimStart(',', ' ', '\n', '\r', '\t')
-                val name = JsonUtils.extractString(obj, "name") ?: continue
-                val prompt = JsonUtils.extractString(obj, "systemPrompt") ?: continue
-                val model = JsonUtils.extractString(obj, "model") ?: ""
-                results.add(ClaudePreset(name, prompt, model))
-            }
-            results
+            val type = object : TypeToken<List<ClaudePreset>>() {}.type
+            Gson().fromJson<List<ClaudePreset>>(text, type) ?: emptyList()
         } catch (_: Exception) {
             emptyList()
         }
     }
 
     fun save(presets: List<ClaudePreset>) {
-        file.parentFile.mkdirs()
-        val sb = StringBuilder("[")
-        presets.forEachIndexed { i, p ->
-            if (i > 0) sb.append(",")
-            sb.append("{\"name\":\"${escapeJson(p.name)}\",\"systemPrompt\":\"${escapeJson(p.systemPrompt)}\",\"model\":\"${escapeJson(p.model)}\"}")
-        }
-        sb.append("]")
-        file.writeText(sb.toString())
+        try {
+            file.parentFile.mkdirs()
+            file.writeText(GsonBuilder().setPrettyPrinting().create().toJson(presets))
+        } catch (_: Exception) {}
     }
-
-    private fun escapeJson(s: String) = s.replace("\\", "\\\\").replace("\"", "\\\"")
-        .replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t")
-
 }

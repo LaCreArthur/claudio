@@ -5,6 +5,8 @@ import com.intellij.openapi.ui.DialogWrapper
 import java.awt.Component
 import java.awt.Dimension
 import java.awt.Font
+import com.intellij.ui.components.JBCheckBox
+import com.intellij.ui.components.JBTextArea
 import javax.swing.*
 
 data class PermissionRequest(
@@ -20,7 +22,7 @@ class PermissionDialog(
 ) : DialogWrapper(project) {
 
     private var choice = PermissionChoice.ALLOW_ONCE
-    private val rememberCheckbox = JCheckBox("Remember for this project")
+    private val rememberCheckbox = JBCheckBox("Remember for this project")
 
     init {
         title = "Claude Permission Request"
@@ -40,7 +42,7 @@ class PermissionDialog(
 
         if (request.detail.isNotBlank()) {
             panel.add(Box.createVerticalStrut(8))
-            val detail = JTextArea(request.detail).apply {
+            val detail = JBTextArea(request.detail).apply {
                 isEditable = false
                 lineWrap = true
                 wrapStyleWord = true

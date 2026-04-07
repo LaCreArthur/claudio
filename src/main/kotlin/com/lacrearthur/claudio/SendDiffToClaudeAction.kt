@@ -8,7 +8,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindowManager
-import javax.swing.SwingUtilities
+
 
 /**
  * Injects the full working-tree diff (staged + unstaged) into the Claudio input bar.
@@ -32,7 +32,7 @@ class SendDiffToClaudeAction : AnAction("Send Uncommitted Diff to Claude") {
             val basePath = project.basePath ?: return
             ApplicationManager.getApplication().executeOnPooledThread {
                 val diff = buildDiff(basePath)
-                SwingUtilities.invokeLater {
+                ApplicationManager.getApplication().invokeLater {
                     if (diff == null) {
                         NotificationGroupManager.getInstance()
                             .getNotificationGroup("Claudio")
