@@ -1,5 +1,9 @@
 package com.lacrearthur.claudio
 
+import com.intellij.diff.DiffContentFactory
+import com.intellij.diff.DiffManager
+import com.intellij.diff.requests.SimpleDiffRequest
+import com.intellij.openapi.fileTypes.FileTypeManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.ui.JBColor
@@ -185,22 +189,16 @@ class ChangedFilesPanel(
     }
 
     private fun showDiff(path: String, pair: Pair<String, String>) {
-        // Open file and navigate to first changed line.
-        // The native VCS gutter (green/blue bars) already shows uncommitted changes
-        // with click-to-rollback. We just need to get the user there.
-        val vf = LocalFileSystem.getInstance().findFileByPath(path) ?: return
-        val firstChanged = findFirstChangedLine(pair.first, pair.second)
-        val descriptor = com.intellij.openapi.fileEditor.OpenFileDescriptor(project, vf, firstChanged, 0)
-        com.intellij.openapi.fileEditor.FileEditorManager.getInstance(project).openTextEditor(descriptor, true)
-    }
-
-    private fun findFirstChangedLine(before: String, after: String): Int {
-        val oldLines = before.lines()
-        val newLines = after.lines()
-        for (i in newLines.indices) {
-            if (i >= oldLines.size || oldLines[i] != newLines[i]) return i
-        }
-        return 0
+        val fileName = path.substringAfterLast("/")
+        val vf = LocalFileSystem.getInstance().findFileByPath(path)
+        val fileType = vf?.fileType ?: FileTypeManager.getInstance().getFileTypeByFileName(fileName)
+        val factory = DiffContentFactory.getInstance()
+        val before = factory.create(project, pair.first, fileType)
+        // Right side = live editable document so the diff viewer shows per-hunk
+        // revert/apply chevrons (>>, <<) like the native VCS diff.
+        val after = if (vf != null) factory.create(project, vf) else factory.create(project, pair.second, fileType)
+        val request = SimpleDiffRequest(fileName, before, after, "Before (Claude)", "After (current)")
+        DiffManager.getInstance().showDiff(project, request)
     }
 
     private fun toggleCollapse() {
