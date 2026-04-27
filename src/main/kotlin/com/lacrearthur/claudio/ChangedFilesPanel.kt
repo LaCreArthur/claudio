@@ -3,9 +3,15 @@ package com.lacrearthur.claudio
 import com.intellij.diff.DiffContentFactory
 import com.intellij.diff.DiffManager
 import com.intellij.diff.requests.SimpleDiffRequest
+import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.fileTypes.FileTypeManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.LocalFileSystem
+import com.intellij.openapi.vfs.VirtualFileManager
+import com.intellij.openapi.vfs.newvfs.BulkFileListener
+import com.intellij.openapi.vfs.newvfs.events.VFileContentChangeEvent
+import com.intellij.openapi.vfs.newvfs.events.VFileEvent
 import com.intellij.ui.JBColor
 import com.intellij.util.ui.JBUI
 import java.awt.*
@@ -25,6 +31,7 @@ import javax.swing.*
 class ChangedFilesPanel(
     private val project: Project,
     private val hookServer: HookServer,
+    parentDisposable: Disposable,
 ) : JPanel(BorderLayout()) {
 
     private val fileListPanel = JPanel().apply {
@@ -93,6 +100,32 @@ class ChangedFilesPanel(
         add(fileListPanel, BorderLayout.CENTER)
 
         hookServer.onFileChanged = { refresh() }
+
+        // Track external edits to files Claude touched (e.g. per-hunk reverts in
+        // the diff viewer). When current disk content matches Claude's pre-edit
+        // baseline, drop the entry; otherwise refresh stats against live state.
+        project.messageBus.connect(parentDisposable).subscribe(
+            VirtualFileManager.VFS_CHANGES,
+            object : BulkFileListener {
+                override fun after(events: List<VFileEvent>) {
+                    var changed = false
+                    for (event in events) {
+                        if (event !is VFileContentChangeEvent) continue
+                        val path = event.path
+                        val pair = hookServer.changedFiles[path] ?: continue
+                        val current = try { event.file.contentsToByteArray().toString(Charsets.UTF_8) }
+                                      catch (_: Exception) { continue }
+                        if (current == pair.first) {
+                            hookServer.changedFiles.remove(path)
+                        } else if (current != pair.second) {
+                            hookServer.changedFiles[path] = Pair(pair.first, current)
+                        } else continue
+                        changed = true
+                    }
+                    if (changed) ApplicationManager.getApplication().invokeLater { refresh() }
+                }
+            }
+        )
     }
 
     fun refresh() {

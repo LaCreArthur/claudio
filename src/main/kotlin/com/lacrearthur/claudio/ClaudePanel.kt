@@ -163,7 +163,7 @@ class ClaudePanel(
         }
 
         val inputBar = buildInputBar()
-        val changedFilesPanel = ChangedFilesPanel(project, hookServer)
+        val changedFilesPanel = ChangedFilesPanel(project, hookServer, this)
 
         val bottomPanel = JPanel(BorderLayout()).apply {
             add(changedFilesPanel, BorderLayout.NORTH)
