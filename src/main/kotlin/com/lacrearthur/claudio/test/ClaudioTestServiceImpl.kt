@@ -12,6 +12,7 @@ import com.lacrearthur.claudio.PermissionDialog
 import java.net.HttpURLConnection
 import java.net.URI
 import java.util.concurrent.atomic.AtomicReference
+import javax.swing.SwingUtilities
 import com.intellij.openapi.application.ApplicationManager
 
 private val log = Logger.getInstance("ClaudioTestService")
