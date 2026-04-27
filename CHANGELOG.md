@@ -1,3 +1,15 @@
+##### **v0.8.50** (2026-04-27)
+
+**Feature**
+
+- Smarter drag-and-drop into the input bar - dropped images now insert as absolute paths (so Claude reads them as image input), in-project files insert as `@relative/path` (so Claude loads file content), and out-of-project files insert as absolute paths
+
+**Build / Release**
+
+- Fix JetBrains Marketplace upload rejection ("plugin archive file cannot be extracted") - bumped IntelliJ Platform Gradle Plugin 2.13.1 to 2.14.0 (per JetBrains support guidance for this error class) and added kotlin.stdlib.default.dependency=false to gradle.properties so the IDE-bundled Kotlin stdlib is no longer duplicated inside the plugin distribution
+- Restore CI publishing pipeline - removed stale `-x buildWebview` flag that was failing every release tag since v0.8.40, so future version tags actually build and publish to the marketplace via GitHub Actions
+- Drop until-build constraint for forward compatibility with future IDE versions per IntelliJ Platform 2024.3+ guidance; rely on plugin verifier for compatibility checks instead
+
 ##### **v0.8.49** (2026-03-28)
 
 **Bug Fix**

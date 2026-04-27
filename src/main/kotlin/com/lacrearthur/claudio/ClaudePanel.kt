@@ -47,6 +47,7 @@ import javax.swing.*
 
 private val log = Logger.getInstance("Claudio")
 internal val MONO_11 = Font("JetBrains Mono", Font.PLAIN, JBUI.scale(11))
+private val IMAGE_EXTS = setOf("png", "jpg", "jpeg", "gif", "webp", "bmp", "svg")
 
 internal inline fun Project.withTestService(block: ClaudioTestServiceImpl.() -> Unit) {
     try { service<ClaudioTestServiceImpl>().block() } catch (_: Exception) {}
@@ -501,6 +502,14 @@ class ClaudePanel(
         inputArea.caretPosition = inputArea.document.length
     }
 
+    private fun fileToInputRef(f: File): String {
+        val abs = f.absolutePath
+        if (f.extension.lowercase() in IMAGE_EXTS) return abs
+        val basePath = project.basePath ?: return abs
+        val prefix = if (basePath.endsWith('/')) basePath else "$basePath/"
+        return if (abs.startsWith(prefix)) "@" + abs.removePrefix(prefix) else abs
+    }
+
     fun setInputText(text: String) {
         inputArea.text = text
         inputArea.requestFocusInWindow()
@@ -632,7 +641,10 @@ class ClaudePanel(
             }
         })
 
-        // Drag-and-drop files into input bar -> inserts @relative/path as context
+        // Drag-and-drop files into input bar.
+        // Images -> absolute path (CC reads as image input).
+        // In-project text files -> @relative/path (CC loads file content).
+        // Out-of-project text files -> absolute path.
         val defaultTransferHandler = inputArea.transferHandler
         inputArea.transferHandler = object : TransferHandler() {
             override fun canImport(support: TransferSupport): Boolean =
@@ -644,11 +656,7 @@ class ClaudePanel(
                     try {
                         @Suppress("UNCHECKED_CAST")
                         val files = support.transferable.getTransferData(DataFlavor.javaFileListFlavor) as List<File>
-                        val basePath = project.basePath ?: ""
-                        val refs = files.joinToString(" ") { f ->
-                            val rel = f.absolutePath.removePrefix(basePath).trimStart('/')
-                            "@$rel"
-                        }
+                        val refs = files.joinToString(" ") { fileToInputRef(it) }
                         appendToInput(" $refs")
                         return true
                     } catch (_: Exception) {}

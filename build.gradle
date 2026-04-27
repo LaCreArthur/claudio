@@ -7,7 +7,7 @@ plugins {
 }
 
 group = 'com.lacrearthur.claudio'
-version = '0.8.49'
+version = '0.8.50'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_21
@@ -74,10 +74,11 @@ intellijPlatform {
     }
 }
 
-// Ensure plugin.xml is patched with the correct since/until build and change notes
+// Patch plugin.xml with change notes from CHANGELOG.md.
+// sinceBuild defaults to the targeted platform major (253 for 2025.3) since
+// gradle plugin 2.14.0; untilBuild is intentionally unset for forward compat.
 patchPluginXml {
-    sinceBuild = '253'
-    untilBuild = '263.*'
+    untilBuild = provider { null }
 
     // Dynamically load the latest changelog entry from CHANGELOG.md
     def changelogFile = file('CHANGELOG.md')
