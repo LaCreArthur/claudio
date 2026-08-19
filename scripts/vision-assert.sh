@@ -10,7 +10,7 @@
 #   ~/.lmstudio/bin/lms server start
 #   ~/.lmstudio/bin/lms load --yes -c 8192
 #
-# Performance: ~13s (thinking disabled). Use scripts/rider-screenshot.sh for Rider windows.
+# Performance: ~1-3s warm at 800px on the work M3 Pro. Use scripts/rider-screenshot.sh for Rider windows.
 
 set -euo pipefail
 
@@ -33,7 +33,7 @@ if [ -z "$MODEL" ]; then
     exit 2
 fi
 
-# Build payload: thinking disabled for ~13s inference (vs ~63s with thinking)
+# Disable reasoning through LM Studio's current OpenAI-compatible control.
 RESPONSE=$(python3 - <<PYEOF | curl -sf http://localhost:1234/v1/chat/completions \
     -H "Content-Type: application/json" \
     --data-binary @-
@@ -44,10 +44,10 @@ payload = {
     "model": "$MODEL",
     "max_tokens": 250,
     "temperature": 0,
-    "thinking": {"type": "disabled"},
+    "reasoning_effort": "none",
     "messages": [{"role": "user", "content": [
         {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{img_b64}"}},
-        {"type": "text", "text": "/no_think $ASSERTION\n\nBriefly describe what you see relevant to the question (1-2 sentences), then answer YES or NO on the last line."}
+        {"type": "text", "text": "$ASSERTION\n\nBriefly describe what you see relevant to the question (1-2 sentences), then answer YES or NO on the last line."}
     ]}]
 }
 print(json.dumps(payload))
@@ -59,26 +59,11 @@ if [ -z "$RESPONSE" ]; then
     exit 2
 fi
 
-# Parse content — with regex fallback for LM Studio's occasional invalid JSON
-CONTENT=$(python3 - <<PYEOF
-import json, re, sys
-
-raw = """$RESPONSE"""
-
-try:
-    r = json.loads(raw)
-    content = r['choices'][0]['message']['content'].strip()
-    print(content)
-except Exception:
-    # LM Studio sometimes emits unescaped control chars — regex fallback
-    m = re.search(r'"content":\s*"(.*?)"(?:,\s*"reasoning_content"|\s*})', raw, re.DOTALL)
-    if m:
-        content = m.group(1).replace('\\n', '\n').replace('\\"', '"').strip()
-        print(content)
-    else:
-        sys.exit(2)
-PYEOF
-)
+# Parse the JSON response directly. Invalid JSON is an API error, not a second response format.
+if ! CONTENT=$(printf '%s' "$RESPONSE" | python3 -c 'import json, sys; print(json.load(sys.stdin)["choices"][0]["message"]["content"].strip())'); then
+    echo "ERROR: Could not parse model response." >&2
+    exit 2
+fi
 
 if [ -z "$CONTENT" ]; then
     echo "ERROR: Could not parse model response." >&2

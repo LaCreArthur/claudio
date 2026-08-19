@@ -1,11 +1,11 @@
 #!/bin/bash
-# vision-describe.sh - Describe a screenshot using local Qwen3-VL via LM Studio
+# vision-describe.sh - Describe a screenshot using the loaded local VLM via LM Studio
 #
 # Usage:
 #   ./scripts/vision-describe.sh <image_path> [prompt]
 #
 # Requirements:
-#   - LM Studio running with Qwen3-VL-32B loaded, local server ON (http://localhost:1234/v1)
+#   - LM Studio running with a vision model loaded, local server ON (http://localhost:1234/v1)
 #   - llm CLI installed (pipx install llm && pipx inject llm llm-lmstudio)
 #
 # Examples:

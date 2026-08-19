@@ -282,17 +282,17 @@ Always call `annotation.dispose()` after reading (FileAnnotation implements Disp
 
 ## Local Vision (E2E visual assertions)
 
-**Model:** `qwen3-vl-32b-thinking-mlx` via LM Studio at `http://localhost:1234/v1`
+**Model:** `qwen/qwen3.6-35b-a3b` via LM Studio at `http://localhost:1234/v1`
 
 **Setup (must do before first use):**
 ```bash
 ~/.lmstudio/bin/lms server start
-~/.lmstudio/bin/lms load --yes -c 8192   # -c 8192 is REQUIRED - avoids visual token overflow
+~/.lmstudio/bin/lms load qwen/qwen3.6-35b-a3b --yes -c 8192
 ```
 
 **Usage:**
 ```bash
-# Take Rider window screenshot at 800px (correct size for this VLM)
+# Take Rider window screenshot at the tested 800px size
 bash scripts/rider-screenshot.sh /tmp/shot.png
 
 # Assert a visual condition (exit 0=YES, 1=NO, 2=error)
@@ -302,14 +302,14 @@ bash scripts/vision-assert.sh /tmp/shot.png "Is there a permission dialog visibl
 bash scripts/vision-describe.sh /tmp/shot.png "What dialogs are visible?"
 ```
 
-**Hard constraints (burn once, never again):**
-- Always load model with `-c 8192` - Retina Rider window = ~4320 visual tokens, overflows 4096
-- Never resize screenshots below 700px - LM Studio MLX crashes at 640px
+**Current contract:**
+- Load at 8192 context, matching the measured workflow
+- Keep screenshots at 800px, the only size rechecked with this model
 - Always use `scripts/rider-screenshot.sh` not raw screencapture - it handles Retina 2x resize
 - `vision-assert.sh` uses Python+curl, NOT `llm` CLI - avoids shell arg limit on base64
-- If model enters degraded state (returns schema docs): `lms unload --all && lms load --yes -c 8192`
+- Disable reasoning with `reasoning_effort: none`; the older `thinking: disabled` field is ignored by this model
 
-**Performance:** ~13s per assertion at 800px. No JetBrains-native panel capture API exists.
+**Measured 2026-08-19:** 12/12 correct assertions, 1-3s each after load on the work M3 Pro. Model load takes about 13s. No JetBrains-native panel capture API exists.
 
 Use state assertions (`svc.getActiveDialogType()`) first. Use vision only for what state can't verify: button labels, visual layout, ANSI-rendered content, icons/colors.
 
