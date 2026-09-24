@@ -24,7 +24,6 @@ class ClaudioTestServiceImpl(private val project: Project) : ClaudioTestService 
     private val lastResponse       = AtomicReference<String?>(null)
     private val activeDialog       = AtomicReference<String?>(null)
     private val lastParsedQuestion = AtomicReference<String?>(null)
-    private val lastPromptMatch    = AtomicReference<String?>(null)
     @Volatile var defaultTestModel: String? = null
     @Volatile var changedFilesAccessor: (() -> Map<String, Pair<String, String>>)? = null
     @Volatile var changedFilesClearer: (() -> Unit)? = null
@@ -74,11 +73,6 @@ class ClaudioTestServiceImpl(private val project: Project) : ClaudioTestService 
                 transcriptBuffer.delete(0, transcriptBuffer.length - 1000)
             }
         }
-        // Detect Claude ready prompt: line ending with "> " (Claude CLI waiting for input)
-        val trimmed = text.trimEnd()
-        if (trimmed.endsWith(">") || trimmed.endsWith("> ")) {
-            lastPromptMatch.set(trimmed.takeLast(80))
-        }
     }
 
     // ── ClaudioTestService ───────────────────────────────────────────────────
@@ -90,7 +84,6 @@ class ClaudioTestServiceImpl(private val project: Project) : ClaudioTestService 
     override fun getLastParsedQuestionTitle()  = lastParsedQuestion.get()
     override fun isClaudeSessionReady()        = sessionReady
     override fun getCliProcessStatus()         = cliProcessStatus
-    override fun getLastTerminalPromptMatch()  = lastPromptMatch.get()
     override fun getRecentTerminalTranscript() = synchronized(transcriptLock) { transcriptBuffer.toString() }
 
     /**
@@ -183,7 +176,6 @@ class ClaudioTestServiceImpl(private val project: Project) : ClaudioTestService 
         lastResponse.set(null)
         activeDialog.set(null)
         lastParsedQuestion.set(null)
-        lastPromptMatch.set(null)
         synchronized(transcriptLock) { transcriptBuffer.clear() }
     }
 

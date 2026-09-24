@@ -19,7 +19,6 @@ interface RemoteClaudioTestService {
     fun isClaudeSessionReady(): Boolean
     fun getCliProcessStatus(): String
     fun getRecentTerminalTranscript(): String
-    fun getLastTerminalPromptMatch(): String?
     fun sendTerminalInput(text: String)
     fun dismissActiveDialog()
     fun answerActiveDialogWithText(text: String)

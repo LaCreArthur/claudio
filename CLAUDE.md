@@ -189,7 +189,7 @@ Use `./gradlew printBundledModules` to discover available module names. Platform
 ./gradlew clean runIde           # Debug in sandbox IDEA
 
 # Unit tests (no IDE, fast)
-./gradlew test                   # HookScriptSubprocessTest, BuildVerificationTest, PlaceholderTest
+./gradlew test                   # HookScriptSubprocessTest
 
 # Integration tests (launches real IDEA 2025.3 via Starter + Driver)
 ./gradlew buildPlugin && ./gradlew integrationTest   # Tier 0: synthetic (no Claude CLI needed)
@@ -219,16 +219,13 @@ pkill -f Rider; sleep 5 && open -a Rider
 
 ```
 src/test/                                        # Unit tests (./gradlew test)
-├── kotlin/.../HookScriptSubprocessTest.kt       # Hook script forwards JSON, silent when no port
-├── kotlin/.../e2e/BuildVerificationTest.kt      # Plugin ZIP structure validation
-└── java/.../PlaceholderTest.java                # Infrastructure smoke
+└── kotlin/.../HookScriptSubprocessTest.kt       # Hook script forwards JSON, silent when no port
 
 src/integrationTest/                             # Integration tests (./gradlew integrationTest | realE2ETest)
 ├── kotlin/.../ClaudioTestBase.kt                # Base: Starter + Driver setup, IDE boot, trust prompt handling
-├── kotlin/.../RemoteClaudioTestService.kt       # @Remote stub (16 methods) bridging test -> plugin process
+├── kotlin/.../RemoteClaudioTestService.kt       # @Remote stub bridging test -> plugin process
 ├── kotlin/.../ClaudioHookTest.kt                # Tier 0 (11 tests): hook routing, permission dialog, parser, malformed JSON
-├── kotlin/.../RealClaudeSmokeTest.kt            # Tier 1 @Tag("realE2E") (7 tests): real CLI round-trips
-└── testData/test-project/                       # Minimal project for IDEA to open
+└── kotlin/.../RealClaudeSmokeTest.kt            # Tier 1 @Tag("realE2E") (7 tests): real CLI round-trips
 ```
 
 **Tier 0** (`integrationTest`): Launches IDEA, injects synthetic hook events via HTTP, asserts on plugin state. No Claude CLI needed.

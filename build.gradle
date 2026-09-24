@@ -156,9 +156,6 @@ tasks.named('runIde') {
 
 
 sourceSets {
-    test {
-        kotlin { srcDirs = ['src/test/kotlin', 'src/test/java'] }
-    }
     integrationTest {
         kotlin { srcDirs = ['src/integrationTest/kotlin'] }
         compileClasspath += sourceSets.main.output

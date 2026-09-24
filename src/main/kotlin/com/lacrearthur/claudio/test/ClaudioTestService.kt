@@ -40,9 +40,6 @@ interface ClaudioTestService {
     /** Rolling ~1000-char ring buffer of raw terminal output text. */
     fun getRecentTerminalTranscript(): String
 
-    /** Last line of terminal output that matched a Claude prompt-ready pattern (e.g. "> "). Null if none yet. */
-    fun getLastTerminalPromptMatch(): String?
-
     /** Sends text to the real TerminalView as if typed from the input bar. */
     fun sendTerminalInput(text: String)
 
